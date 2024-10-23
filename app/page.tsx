@@ -6,18 +6,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useLine } from './context/LineContext'
 
 export default function Home() {
   const [lineName, setLineName] = useState('')
   const [walletAddress, setWalletAddress] = useState('')
   const router = useRouter()
+  const { setLineName:setLineNameContext } = useLine()
 
   const createLine = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically make an API call to create the line
-    // For now, we'll just generate a random UUID and redirect
     const uuid = Math.random().toString(36).substring(2, 15)
-    router.push(`/${uuid}`)
+    setLineNameContext(lineName, uuid)
+    router.push(`/queue/${uuid}`)
   }
 
   return (
