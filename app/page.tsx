@@ -21,35 +21,42 @@ export default function Home() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-md">
-      <Card>
+    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex flex-col items-center py-8 px-4">
+      <header className="w-full max-w-md mb-8 text-white text-center">
+        <h1 className="text-3xl font-bold mb-2">SatsQueue</h1>
+        <p className="text-xl">Create your lightning-fast queue!</p>
+      </header>
+
+      <Card className="w-full max-w-md shadow-lg">
         <CardHeader>
-          <CardTitle>Create a Line</CardTitle>
+          <CardTitle className="text-2xl">Create a Line</CardTitle>
           <CardDescription>Enter line details to get started</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={createLine} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="lineName">Line Name</Label>
+              <Label htmlFor="lineName" className="text-lg">Line Name</Label>
               <Input
                 id="lineName"
                 value={lineName}
                 onChange={(e) => setLineName(e.target.value)}
                 placeholder="Enter line name"
                 required
+                className="text-lg py-2"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="walletAddress">Wallet Address</Label>
+              <Label htmlFor="walletAddress" className="text-lg">Wallet Address</Label>
               <Input
                 id="walletAddress"
                 value={walletAddress}
                 onChange={(e) => setWalletAddress(e.target.value)}
                 placeholder="Enter wallet address"
                 required
+                className="text-lg py-2"
               />
             </div>
-            <Button type="submit" className="w-full">Create Line</Button>
+            <Button type="submit" className="w-full text-lg py-2">Create Line</Button>
           </form>
         </CardContent>
       </Card>

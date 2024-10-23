@@ -25,21 +25,26 @@ export default function Line({ params }: { params: { uuid: string } }) {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-md">
-      <Card className="mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex flex-col items-center py-8 px-4">
+      <header className="w-full max-w-md mb-8 text-white text-center">
+        <h1 className="text-3xl font-bold mb-2">SatsQueue</h1>
+        <p className="text-xl">Join the lightning-fast queue!</p>
+      </header>
+      
+      <Card className="w-full max-w-md mb-4 shadow-lg">
         <CardHeader>
-          <CardTitle>Current Line State</CardTitle>
+          <CardTitle className="text-2xl">Current Line State</CardTitle>
           <CardDescription>Line ID: {params.uuid}</CardDescription>
         </CardHeader>
         <CardContent>
           {queue.length === 0 ? (
-            <p>No one in line yet</p>
+            <p className="text-center text-gray-500">No one in line yet</p>
           ) : (
             <ul className="space-y-2">
               {queue.map((item, index) => (
                 <li key={index} className="flex justify-between items-center border-b py-2">
-                  <span>{item.identifier}</span>
-                  <span>{new Date(item.timestamp).toLocaleTimeString()}</span>
+                  <span className="font-medium">{item.identifier}</span>
+                  <span className="text-sm text-gray-500">{new Date(item.timestamp).toLocaleTimeString()}</span>
                 </li>
               ))}
             </ul>
@@ -47,23 +52,24 @@ export default function Line({ params }: { params: { uuid: string } }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="w-full max-w-md shadow-lg">
         <CardHeader>
-          <CardTitle>Join the Line</CardTitle>
+          <CardTitle className="text-2xl">Join the Line</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={joinLine} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="identifier">Identifier</Label>
+              <Label htmlFor="identifier" className="text-lg">Your Name</Label>
               <Input
                 id="identifier"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Enter your identifier"
+                placeholder="Enter your name"
                 required
+                className="text-lg py-2"
               />
             </div>
-            <Button type="submit" className="w-full">Enter Line</Button>
+            <Button type="submit" className="w-full text-lg py-2">Enter Line</Button>
           </form>
         </CardContent>
       </Card>
