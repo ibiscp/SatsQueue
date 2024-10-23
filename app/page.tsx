@@ -6,18 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useLine } from './context/LineContext'
+import { useQueue } from './context/QueueContext'
 
 export default function Home() {
-  const [lineName, setLineName] = useState('')
+  const [queueName, setQueueName] = useState('')
   const [walletAddress, setWalletAddress] = useState('')
   const router = useRouter()
-  const { setLineName:setLineNameContext } = useLine()
+  const { setQueueName:setQueueNameContext } = useQueue()
 
-  const createLine = async (e: React.FormEvent) => {
+  const createQueue = async (e: React.FormEvent) => {
     e.preventDefault()
     const uuid = Math.random().toString(36).substring(2, 15)
-    setLineNameContext(lineName, uuid)
+    setQueueNameContext(queueName, uuid)
     router.push(`/queue/${uuid}`)
   }
 
@@ -30,18 +30,18 @@ export default function Home() {
 
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl">Create a Line</CardTitle>
-          <CardDescription>Enter line details to get started</CardDescription>
+          <CardTitle className="text-2xl">Create a Queue</CardTitle>
+          <CardDescription>Enter queue details to get started</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={createLine} className="space-y-4">
+          <form onSubmit={createQueue} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="lineName" className="text-lg">Line Name</Label>
+              <Label htmlFor="queueName" className="text-lg">Queue Name</Label>
               <Input
-                id="lineName"
-                value={lineName}
-                onChange={(e) => setLineName(e.target.value)}
-                placeholder="Enter line name"
+                id="queueName"
+                value={queueName}
+                onChange={(e) => setQueueName(e.target.value)}
+                placeholder="Enter queue name"
                 required
                 className="text-lg py-2"
               />
@@ -57,7 +57,7 @@ export default function Home() {
                 className="text-lg py-2"
               />
             </div>
-            <Button type="submit" className="w-full text-lg py-2">Create Line</Button>
+            <Button type="submit" className="w-full text-lg py-2">Create Queue</Button>
           </form>
         </CardContent>
       </Card>
