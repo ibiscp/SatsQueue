@@ -118,32 +118,40 @@ export default function QueuePage({ params }: { params: { uuid: string } }) {
                 }
               }}
             >
-              Remove First from Queue
+              Call next in queue
             </Button>
           </div>
         </Card>
 
         <Card className="w-full md:w-1/3 shadow-lg flex flex-col">
           <CardHeader>
-            <CardTitle className="text-2xl">Recently Removed</CardTitle>
-            <CardDescription>Last 10 removed from queue</CardDescription>
+            <CardTitle className="text-2xl">Recently Called</CardTitle>
+            <CardDescription>Last 10 called from queue</CardDescription>
           </CardHeader>
           <CardContent className="flex-grow overflow-hidden">
             <div className="h-[calc(100vh-24rem)] overflow-y-auto pr-2">
               {removedItems.length === 0 ? (
-                <p className="text-center text-gray-500">No one removed yet</p>
+                <p className="text-center text-gray-500">No one called yet</p>
               ) : (
                 <ul className="space-y-4">
                   {removedItems.map((item, index) => (
                     <li key={index} className={`border-b py-2 ${index === 0 ? 'bg-gray-100 p-2 rounded' : ''}`}>
-                      <div className={`grid grid-cols-3 gap-2 items-center ${index === 0 ? 'font-bold' : ''}`}>
-                        <span className="truncate">{item.identifier}</span>
-                        <span className="text-sm text-gray-500 text-center">{item.sats} sats</span>
-                        <span className="text-sm text-gray-500 text-right">{new Date(item.removedAt).toLocaleTimeString()}</span>
-                      </div>
-                      {index === 0 && (
-                        <div className="text-sm text-gray-500 mt-1">
-                          Removed: {new Date(item.removedAt).toLocaleString()}
+                      {index === 0 ? (
+                        <>
+                          <div className="text-3xl font-bold mb-2 text-center">{item.identifier}</div>
+                          <div className="text-sm text-gray-500 text-center">
+                            <span>{item.sats} sats</span>
+                            <span className="mx-2">•</span>
+                            <span>Waited: {Math.floor((item.removedAt - item.timestamp) / 60000)} minutes</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2 items-center">
+                          <span className="truncate">{item.identifier}</span>
+                          <span className="text-sm text-gray-500 text-center">
+                            {Math.floor((item.removedAt - item.timestamp) / 60000)} min
+                          </span>
+                          <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
                         </div>
                       )}
                     </li>
