@@ -1,17 +1,17 @@
-'use client'
-
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@radix-ui/react-label';
 import { useState } from 'react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useParams } from 'react-router-dom'
 
 type QueueItem = {
   identifier: string;
   timestamp: number;
 }
 
-export default function Line({ params }: { params: { uuid: string } }) {
+export default function Queue() {
+  const { uuid } = useParams<{ uuid: string }>()
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [identifier, setIdentifier] = useState('')
 
@@ -34,7 +34,7 @@ export default function Line({ params }: { params: { uuid: string } }) {
       <Card className="w-full max-w-md mb-4 shadow-lg">
         <CardHeader>
           <CardTitle className="text-2xl">Current Line State</CardTitle>
-          <CardDescription>Line ID: {params.uuid}</CardDescription>
+          <CardDescription>Line ID: {uuid}</CardDescription>
         </CardHeader>
         <CardContent>
           {queue.length === 0 ? (
