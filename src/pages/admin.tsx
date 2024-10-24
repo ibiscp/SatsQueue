@@ -77,22 +77,32 @@ export default function Admin() {
         <Card className="w-full md:w-1/3 shadow-lg flex flex-col">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Scan to Enter the Queue</CardTitle>
-            {queueName && <CardDescription>Queue: {queueName}</CardDescription>}
+            <CardDescription>Queue Name: {queueName}</CardDescription>
+            <CardDescription>Queue ID: {uuid}</CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center items-center flex-grow">
+          <CardContent className="flex flex-col justify-center items-center flex-grow">
             <QRCodeSVG value={qrValue} size={250} />
+            <div className="mt-4 text-center">
+              <a
+                href={qrValue}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200"
+              >
+                {qrValue}
+              </a>
+            </div>
           </CardContent>
         </Card>
 
         <Card className="w-full md:w-1/3 shadow-lg flex flex-col">
-          <CardHeader>
-            <CardTitle className="text-2xl">Current Queue Status</CardTitle>
-            <CardDescription>Queue ID: {uuid}</CardDescription>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Current Queue</CardTitle>
           </CardHeader>
           <CardContent className="flex-grow overflow-hidden">
             <div className="h-[calc(100vh-24rem)] overflow-y-auto pr-2">
               {sortedQueue.length === 0 ? (
-                <p className="text-center text-gray-500">No one in line yet</p>
+                <p className="text-center text-gray-500">No one in queue yet</p>
               ) : (
                 <ul className="space-y-2">
                   {sortedQueue.map((item, index) => (
@@ -118,15 +128,14 @@ export default function Admin() {
                 }
               }}
             >
-              Call next in queue
+              Call next
             </Button>
           </div>
         </Card>
 
         <Card className="w-full md:w-1/3 shadow-lg flex flex-col">
-          <CardHeader>
+          <CardHeader className="text-center">
             <CardTitle className="text-2xl">Recently Called</CardTitle>
-            <CardDescription>Last 10 called from queue</CardDescription>
           </CardHeader>
           <CardContent className="flex-grow overflow-hidden">
             <div className="h-[calc(100vh-24rem)] overflow-y-auto pr-2">

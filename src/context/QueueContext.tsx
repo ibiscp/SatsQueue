@@ -1,6 +1,4 @@
-'use client'
-
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react'
+import { createContext, useState, useContext, ReactNode, useEffect } from 'react'
 import Cookies from 'js-cookie'
 
 type QueueContextType = {

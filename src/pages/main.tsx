@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from "../components/ui/button"
@@ -32,8 +30,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex flex-col items-center py-8 px-4">
       <header className="w-full max-w-md mb-8 text-white text-center">
-        <h1 className="text-3xl font-bold mb-2">SatsQueue</h1>
-        <p className="text-xl">Create your lightning-fast queue!</p>
+        <h1 className="text-3xl font-bold mb-2 flex items-center justify-center">
+          SatsQueue
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 ml-2" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </h1>
       </header>
 
       <Card className="w-full max-w-md shadow-lg">
