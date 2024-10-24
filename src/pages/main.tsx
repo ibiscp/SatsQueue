@@ -6,7 +6,7 @@ import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
-import { useQueue } from './context/QueueContext'
+import { useQueue } from '../context/QueueContext'
 import { app, analytics } from '../lib/firebase'
 
 
@@ -26,7 +26,7 @@ export default function Home() {
     e.preventDefault()
     const uuid = Math.random().toString(36).substring(2, 15)
     setQueueNameContext(queueName, uuid)
-    navigate(`/${uuid}`)
+    navigate(`/queue/${uuid}`)
   }
 
   return (

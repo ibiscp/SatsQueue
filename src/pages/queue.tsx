@@ -1,18 +1,16 @@
-'use client'
-
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@radix-ui/react-label';
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Button } from "../../components/ui/button"
-import { Input } from "../../components/ui/input"
-import { Label } from "../../components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
 
 type QueueItem = {
   identifier: string;
   timestamp: number;
 }
 
-export default function Line() {
+export default function Queue() {
   const { uuid } = useParams<{ uuid: string }>()
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [identifier, setIdentifier] = useState('')

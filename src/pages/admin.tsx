@@ -1,10 +1,9 @@
-'use client'
-
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"
 import { QRCodeSVG } from 'qrcode.react'
-import { useQueue } from '../../context/QueueContext'
-import { Button } from '../../../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useQueue } from '@/context/QueueContext';
+import { Button } from '@/components/ui/button';
+import { useParams } from 'react-router-dom';
 
 type QueueItem = {
   identifier: string;
@@ -16,7 +15,8 @@ type RemovedItem = QueueItem & {
   removedAt: number;
 }
 
-export default function QueuePage({ params }: { params: { uuid: string } }) {
+export default function Admin() {
+  const { uuid } = useParams<{ uuid: string }>();
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [qrValue, setQrValue] = useState('')
   const { getQueueName } = useQueue()
@@ -24,9 +24,9 @@ export default function QueuePage({ params }: { params: { uuid: string } }) {
   const [removedItems, setRemovedItems] = useState<RemovedItem[]>([])
 
   useEffect(() => {
-    const name = getQueueName(params.uuid)
+    const name = getQueueName(uuid)
     setQueueName(name)
-    setQrValue(`${window.location.origin}/${name || params.uuid}`)
+    setQrValue(`${window.location.origin}/${name || uuid}`)
     
     // Here you would typically fetch the queue data from an API
     // For now, we'll use mock data
@@ -52,7 +52,7 @@ export default function QueuePage({ params }: { params: { uuid: string } }) {
       { identifier: "Sam", timestamp: Date.now() - 300000, sats: 155 },
       { identifier: "Tina", timestamp: Date.now() - 250000, sats: 205 }
     ])
-  }, [params.uuid, getQueueName])
+  }, [uuid, getQueueName])
 
   // Sort the queue by sats (descending) and then by timestamp (ascending)
   const sortedQueue = [...queue].sort((a, b) => {
@@ -87,7 +87,7 @@ export default function QueuePage({ params }: { params: { uuid: string } }) {
         <Card className="w-full md:w-1/3 shadow-lg flex flex-col">
           <CardHeader>
             <CardTitle className="text-2xl">Current Queue Status</CardTitle>
-            <CardDescription>Queue ID: {params.uuid}</CardDescription>
+            <CardDescription>Queue ID: {uuid}</CardDescription>
           </CardHeader>
           <CardContent className="flex-grow overflow-hidden">
             <div className="h-[calc(100vh-24rem)] overflow-y-auto pr-2">
