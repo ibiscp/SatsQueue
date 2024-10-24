@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"
 import { QRCodeSVG } from 'qrcode.react'
 import { useQueue } from '../../context/QueueContext'
-import { Button } from '@/components/ui/button'
+import { Button } from '../../../components/ui/button'
 
 type QueueItem = {
   identifier: string;

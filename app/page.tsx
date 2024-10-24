@@ -1,24 +1,32 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Button } from "../components/ui/button"
+import { Input } from "../components/ui/input"
+import { Label } from "../components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { useQueue } from './context/QueueContext'
+import { app, analytics } from '../lib/firebase'
+
 
 export default function Home() {
   const [queueName, setQueueName] = useState('')
   const [walletAddress, setWalletAddress] = useState('')
-  const router = useRouter()
+  const navigate = useNavigate()
   const { setQueueName:setQueueNameContext } = useQueue()
+
+  useEffect(() => {
+    // You can use Firebase services here
+    console.log('Firebase app initialized:', app);
+    console.log('Analytics initialized:', analytics);
+  }, []);
 
   const createQueue = async (e: React.FormEvent) => {
     e.preventDefault()
     const uuid = Math.random().toString(36).substring(2, 15)
     setQueueNameContext(queueName, uuid)
-    router.push(`/queue/${uuid}`)
+    navigate(`/${uuid}`)
   }
 
   return (
