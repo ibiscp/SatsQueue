@@ -4,15 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useQueue } from '@/context/QueueContext';
 import { Button } from '@/components/ui/button';
 import { useParams } from 'react-router-dom';
+import { getQueueData, removeUserFromQueue, listenToQueueUpdates } from '@/lib/firebase';
 
 type QueueItem = {
-  identifier: string;
-  timestamp: number;
+  name: string;
+  id: string;
+  createdAt: number;
   sats: number;
 }
 
 type RemovedItem = QueueItem & {
-  removedAt: number;
+  servedAt: number;
 }
 
 export default function Admin() {
@@ -24,44 +26,50 @@ export default function Admin() {
   const [removedItems, setRemovedItems] = useState<RemovedItem[]>([])
 
   useEffect(() => {
-    const name = getQueueName(uuid)
-    setQueueName(name)
-    setQrValue(`${window.location.origin}/${name || uuid}`)
-    
-    // Here you would typically fetch the queue data from an API
-    // For now, we'll use mock data
-    setQueue([
-      { identifier: "Alice", timestamp: Date.now() - 1200000, sats: 100 },
-      { identifier: "Bob", timestamp: Date.now() - 1150000, sats: 200 },
-      { identifier: "Charlie", timestamp: Date.now() - 1100000, sats: 150 },
-      { identifier: "David", timestamp: Date.now() - 1050000, sats: 175 },
-      { identifier: "Eva", timestamp: Date.now() - 1000000, sats: 125 },
-      { identifier: "Frank", timestamp: Date.now() - 950000, sats: 225 },
-      { identifier: "Grace", timestamp: Date.now() - 900000, sats: 180 },
-      { identifier: "Henry", timestamp: Date.now() - 850000, sats: 140 },
-      { identifier: "Ivy", timestamp: Date.now() - 800000, sats: 190 },
-      { identifier: "Jack", timestamp: Date.now() - 750000, sats: 160 },
-      { identifier: "Kate", timestamp: Date.now() - 700000, sats: 210 },
-      { identifier: "Liam", timestamp: Date.now() - 650000, sats: 130 },
-      { identifier: "Mia", timestamp: Date.now() - 600000, sats: 170 },
-      { identifier: "Noah", timestamp: Date.now() - 550000, sats: 220 },
-      { identifier: "Olivia", timestamp: Date.now() - 500000, sats: 145 },
-      { identifier: "Peter", timestamp: Date.now() - 450000, sats: 195 },
-      { identifier: "Quinn", timestamp: Date.now() - 400000, sats: 135 },
-      { identifier: "Rachel", timestamp: Date.now() - 350000, sats: 185 },
-      { identifier: "Sam", timestamp: Date.now() - 300000, sats: 155 },
-      { identifier: "Tina", timestamp: Date.now() - 250000, sats: 205 }
-    ])
+    const fetchQueueData = async () => {
+      if (uuid) {
+        const name = getQueueName(uuid)
+        setQueueName(name)
+        setQrValue(`${window.location.origin}/${name || uuid}`)
+        
+        const queueData = await getQueueData(uuid);
+        if (queueData) {
+          updateQueueState(queueData);
+        }
+
+        // Set up real-time listener
+        const unsubscribe = listenToQueueUpdates(uuid, updateQueueState);
+        return () => unsubscribe();
+      }
+    };
+
+    fetchQueueData();
   }, [uuid, getQueueName])
 
-  // Sort the queue by sats (descending) and then by timestamp (ascending)
+  const updateQueueState = (queueData: any) => {
+    setQueue(Object.values(queueData.currentQueue || {}));
+    // setRemovedItems(Object.values(queueData.servedCustomers || {}).sort((a, b) => b.servedAt - a.servedAt));
+    const sortedRemovedItems = Object.values(queueData.servedCustomers || {}) as RemovedItem[];
+    sortedRemovedItems.sort((a, b) => b.servedAt - a.servedAt);
+    setRemovedItems(sortedRemovedItems);
+  };
+
+  // Sort the queue by sats (descending) and then by createdAt (ascending)
   const sortedQueue = [...queue].sort((a, b) => {
     if (b.sats !== a.sats) {
       return b.sats - a.sats;
     }
-    return a.timestamp - b.timestamp;
+    return a.createdAt - b.createdAt;
   });
   
+  const handleCallNext = async () => {
+    if (sortedQueue.length > 0 && uuid) {
+      const removedItem = sortedQueue[0];
+      await removeUserFromQueue(uuid, removedItem.id);
+      // The queue will be updated automatically through the real-time listener
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex flex-col items-center py-8 px-4">
       <header className="w-full max-w-6xl mb-8 text-white text-center">
@@ -107,8 +115,8 @@ export default function Admin() {
                 <ul className="space-y-2">
                   {sortedQueue.map((item, index) => (
                     <li key={index} className="grid grid-cols-3 gap-2 items-center border-b py-2">
-                      <span className="font-medium truncate">{item.identifier}</span>
-                      <span className="text-sm text-gray-500 text-center">{new Date(item.timestamp).toLocaleTimeString()}</span>
+                      <span className="font-medium truncate">{item.name}</span>
+                      <span className="text-sm text-gray-500 text-center">{new Date(item.createdAt).toLocaleTimeString()}</span>
                       <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
                     </li>
                   ))}
@@ -119,14 +127,7 @@ export default function Admin() {
           <div className="p-4 border-t">
             <Button
               className="w-full bg-red-500 hover:bg-red-600 text-white"
-              onClick={() => {
-                if (sortedQueue.length > 0) {
-                  const removedItem = sortedQueue[0];
-                  const newQueue = sortedQueue.slice(1);
-                  setQueue(newQueue);
-                  setRemovedItems(prev => [{...removedItem, removedAt: Date.now()}, ...prev.slice(0, 9)]);
-                }
-              }}
+              onClick={handleCallNext}
             >
               Call next
             </Button>
@@ -147,18 +148,18 @@ export default function Admin() {
                     <li key={index} className={`border-b py-2 ${index === 0 ? 'bg-gray-100 p-2 rounded' : ''}`}>
                       {index === 0 ? (
                         <>
-                          <div className="text-3xl font-bold mb-2 text-center">{item.identifier}</div>
+                          <div className="text-3xl font-bold mb-2 text-center">{item.name}</div>
                           <div className="text-sm text-gray-500 text-center">
                             <span>{item.sats} sats</span>
                             <span className="mx-2">•</span>
-                            <span>Waited: {Math.floor((item.removedAt - item.timestamp) / 60000)} minutes</span>
+                            <span>Waited: {Math.floor((item.servedAt - item.createdAt) / 60000)} minutes</span>
                           </div>
                         </>
                       ) : (
                         <div className="grid grid-cols-3 gap-2 items-center">
-                          <span className="truncate">{item.identifier}</span>
+                          <span className="truncate">{item.name}</span>
                           <span className="text-sm text-gray-500 text-center">
-                            {Math.floor((item.removedAt - item.timestamp) / 60000)} min
+                            {Math.floor((item.servedAt - item.createdAt) / 60000)} min
                           </span>
                           <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
                         </div>

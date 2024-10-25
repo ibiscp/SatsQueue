@@ -3,64 +3,76 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@radix-ui/react-label';
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { X } from 'lucide-react'; // Import the X icon for the close button
+import { getQueueData, addUserToQueue, listenToQueueUpdates } from '@/lib/firebase';
 
+// Update the QueueItem type to match the structure from Firebase
 type QueueItem = {
-  identifier: string;
-  timestamp: number;
+  name: string;
+  id: string;
+  createdAt: number;
   sats: number;
 }
 
+type RemovedItem = QueueItem & {
+  servedAt: number;
+}
+
 export default function Queue() {
-  const { uuid } = useParams<{ uuid: string }>()
+  const location = useLocation();
+  const queueId = location.pathname.split('/').pop() || '';
   const [queue, setQueue] = useState<QueueItem[]>([])
+  const [removedItems, setRemovedItems] = useState<RemovedItem[]>([])
   const [identifier, setIdentifier] = useState('')
   const [showLightningIntro, setShowLightningIntro] = useState(false);
 
   useEffect(() => {
-    // Simulating fetching queue data from an API
-    setQueue([
-      { identifier: "Alice", timestamp: Date.now() - 1200000, sats: 100 },
-      { identifier: "Bob", timestamp: Date.now() - 1150000, sats: 200 },
-      { identifier: "Charlie", timestamp: Date.now() - 1100000, sats: 150 },
-      { identifier: "David", timestamp: Date.now() - 1050000, sats: 175 },
-      { identifier: "Eva", timestamp: Date.now() - 1000000, sats: 125 },
-      { identifier: "Frank", timestamp: Date.now() - 950000, sats: 225 },
-      { identifier: "Grace", timestamp: Date.now() - 900000, sats: 180 },
-      { identifier: "Henry", timestamp: Date.now() - 850000, sats: 140 },
-      { identifier: "Ivy", timestamp: Date.now() - 800000, sats: 190 },
-      { identifier: "Jack", timestamp: Date.now() - 750000, sats: 160 },
-      { identifier: "Kate", timestamp: Date.now() - 700000, sats: 210 },
-      { identifier: "Liam", timestamp: Date.now() - 650000, sats: 130 },
-      { identifier: "Mia", timestamp: Date.now() - 600000, sats: 170 },
-      { identifier: "Noah", timestamp: Date.now() - 550000, sats: 220 },
-      { identifier: "Olivia", timestamp: Date.now() - 500000, sats: 145 },
-      { identifier: "Peter", timestamp: Date.now() - 450000, sats: 195 },
-      { identifier: "Quinn", timestamp: Date.now() - 400000, sats: 135 },
-      { identifier: "Rachel", timestamp: Date.now() - 350000, sats: 185 },
-      { identifier: "Sam", timestamp: Date.now() - 300000, sats: 155 },
-      { identifier: "Tina", timestamp: Date.now() - 250000, sats: 205 }
-    ])
-  }, [])
+    console.log('Queue ID:', queueId);
+    const fetchQueueData = async () => {
+      if (queueId) {
+        const queueData = await getQueueData(queueId);
+        if (queueData) {
+          updateQueueState(queueData);
+        }
 
-  const joinQueue = (e: React.FormEvent) => {
+        // Set up real-time listener
+        const unsubscribe = listenToQueueUpdates(queueId, updateQueueState);
+        return () => unsubscribe();
+      }
+    };
+
+    fetchQueueData();
+  }, [queueId])
+
+  const updateQueueState = (queueData: any) => {
+    setQueue(Object.values(queueData.currentQueue || {}));
+    const sortedRemovedItems = Object.values(queueData.servedCustomers || {}) as RemovedItem[];
+    sortedRemovedItems.sort((a, b) => b.servedAt - a.servedAt);
+    setRemovedItems(sortedRemovedItems);
+  };
+
+  const joinQueue = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (identifier.trim()) {
-      const newItem = { identifier: identifier.trim(), timestamp: Date.now(), sats: 0 }
-      setQueue([...queue, newItem])
-      setIdentifier('')
-      setShowLightningIntro(true) // Show the Lightning Network intro card
+    if (identifier.trim() && queueId) {
+      try {
+        await addUserToQueue(queueId, identifier.trim(), 0);
+        setIdentifier('')
+        setShowLightningIntro(true)
+      } catch (error) {
+        console.error("Error joining queue:", error);
+        // TODO: Show error message to user
+      }
     }
   }
 
-  // Sort the queue by sats (descending) and then by timestamp (ascending)
+  // Sort the queue by sats (descending) and then by createdAt (ascending)
   const sortedQueue = [...queue].sort((a, b) => {
     if (b.sats !== a.sats) {
       return b.sats - a.sats;
     }
-    return a.timestamp - b.timestamp;
+    return a.createdAt - b.createdAt;
   });
 
   return (
@@ -75,10 +87,10 @@ export default function Queue() {
       </header>
       
       <div className="w-full max-w-6xl flex flex-col md:flex-row gap-4">
-        <Card className="w-full md:w-2/3 shadow-lg">
+        <Card className="w-full md:w-1/2 shadow-lg">
           <CardHeader>
             <CardTitle className="text-2xl">Join the Queue</CardTitle>
-            <CardDescription>Queue ID: {uuid}</CardDescription>
+            <CardDescription>Queue ID: {queueId}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={joinQueue} className="space-y-4">
@@ -98,68 +110,33 @@ export default function Queue() {
           </CardContent>
         </Card>
 
-        {showLightningIntro && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-2xl shadow-lg relative">
-              <Button 
-                className="absolute top-2 right-2 p-2" 
-                variant="ghost" 
-                onClick={() => setShowLightningIntro(false)}
-              >
-                <X className="h-6 w-6" />
-              </Button>
-              <CardHeader>
-                <CardTitle className="text-2xl">Welcome to the Lightning Network!</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Alert>
-                  <AlertTitle>What is the Lightning Network?</AlertTitle>
-                  <AlertDescription>
-                    The Lightning Network is a "layer 2" payment protocol that operates on top of Bitcoin. It enables fast, low-cost transactions between participating nodes, making it ideal for micropayments and frequent transactions.
-                  </AlertDescription>
-                </Alert>
-                <div className="space-y-2">
-                  <p className="font-semibold">Key benefits of the Lightning Network:</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li>Instant transactions</li>
-                    <li>Low fees</li>
-                    <li>Scalability for millions of transactions per second</li>
-                    <li>Cross-chain atomic swaps</li>
-                  </ul>
-                  <p>
-                    To participate in this queue and potentially earn or spend sats, you'll need a Lightning-enabled wallet. Don't worry if you're new to this - we'll guide you through the process!
-                  </p>
-                  <div className="mt-4">
-                    <p className="font-semibold">Learn more about the Lightning Network:</p>
-                    <a 
-                      href="https://www.youtube.com/watch?v=rrr_zPmEiME" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline"
-                    >
-                      Watch: Lightning Network Explained
-                    </a>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        <Card className="w-full md:w-1/3 shadow-lg flex flex-col">
+        <Card className="w-full md:w-1/2 shadow-lg flex flex-col">
           <CardHeader>
-            <CardTitle className="text-2xl">Current Queue Status</CardTitle>
+            <CardTitle className="text-2xl">Queue Status</CardTitle>
           </CardHeader>
           <CardContent className="flex-grow overflow-hidden">
             <div className="h-[calc(100vh-24rem)] overflow-y-auto pr-2">
+              {removedItems.length > 0 && (
+                <div className="mb-4 p-2 bg-gray-100 rounded">
+                  <h3 className="font-bold text-lg mb-2">Last Called</h3>
+                  <div className="text-3xl font-bold mb-2 text-center">{removedItems[0].name}</div>
+                  <div className="text-sm text-gray-500 text-center">
+                    <span>{removedItems[0].sats} sats</span>
+                    <span className="mx-2">•</span>
+                    <span>Waited: {Math.floor((removedItems[0].servedAt - removedItems[0].createdAt) / 60000)} minutes</span>
+                  </div>
+                </div>
+              )}
+              
+              <h3 className="font-bold text-lg mb-2">Current Queue</h3>
               {sortedQueue.length === 0 ? (
                 <p className="text-center text-gray-500">No one in queue yet</p>
               ) : (
                 <ul className="space-y-2">
                   {sortedQueue.map((item, index) => (
                     <li key={index} className="grid grid-cols-3 gap-2 items-center border-b py-2">
-                      <span className="font-medium truncate">{item.identifier}</span>
-                      <span className="text-sm text-gray-500 text-center">{new Date(item.timestamp).toLocaleTimeString()}</span>
+                      <span className="font-medium truncate">{item.name}</span>
+                      <span className="text-sm text-gray-500 text-center">{new Date(item.createdAt).toLocaleTimeString()}</span>
                       <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
                     </li>
                   ))}
@@ -169,6 +146,54 @@ export default function Queue() {
           </CardContent>
         </Card>
       </div>
+
+      {showLightningIntro && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-2xl shadow-lg relative">
+            <Button 
+              className="absolute top-2 right-2 p-2" 
+              variant="ghost" 
+              onClick={() => setShowLightningIntro(false)}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+            <CardHeader>
+              <CardTitle className="text-2xl">Welcome to the Lightning Network!</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <AlertTitle>What is the Lightning Network?</AlertTitle>
+                <AlertDescription>
+                  The Lightning Network is a "layer 2" payment protocol that operates on top of Bitcoin. It enables fast, low-cost transactions between participating nodes, making it ideal for micropayments and frequent transactions.
+                </AlertDescription>
+              </Alert>
+              <div className="space-y-2">
+                <p className="font-semibold">Key benefits of the Lightning Network:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Instant transactions</li>
+                  <li>Low fees</li>
+                  <li>Scalability for millions of transactions per second</li>
+                  <li>Cross-chain atomic swaps</li>
+                </ul>
+                <p>
+                  To participate in this queue and potentially earn or spend sats, you'll need a Lightning-enabled wallet. Don't worry if you're new to this - we'll guide you through the process!
+                </p>
+                <div className="mt-4">
+                  <p className="font-semibold">Learn more about the Lightning Network:</p>
+                  <a 
+                    href="https://www.youtube.com/watch?v=rrr_zPmEiME" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline"
+                  >
+                    Watch: Lightning Network Explained
+                  </a>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

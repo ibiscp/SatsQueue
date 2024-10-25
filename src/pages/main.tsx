@@ -5,7 +5,7 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { useQueue } from '../context/QueueContext'
-import { app, analytics } from '../lib/firebase'
+import { app, analytics, createQueue } from '../lib/firebase'
 
 
 export default function Home() {
@@ -15,16 +15,20 @@ export default function Home() {
   const { setQueueName:setQueueNameContext } = useQueue()
 
   useEffect(() => {
-    // You can use Firebase services here
     console.log('Firebase app initialized:', app);
     console.log('Analytics initialized:', analytics);
   }, []);
 
-  const createQueue = async (e: React.FormEvent) => {
+  const handleCreateQueue = async (e: React.FormEvent) => {
     e.preventDefault()
-    const uuid = Math.random().toString(36).substring(2, 15)
-    setQueueNameContext(queueName, uuid)
-    navigate(`/queue/${uuid}`)
+    try {
+      const queueId = await createQueue(queueName);
+      setQueueNameContext(queueName, queueId);
+      navigate(`/queue/${queueName}`);
+    } catch (error) {
+      console.error("Error creating queue:", error);
+      // TODO: Show error message to user
+    }
   }
 
   return (
@@ -44,7 +48,7 @@ export default function Home() {
           <CardDescription>Enter queue details to get started</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={createQueue} className="space-y-4">
+          <form onSubmit={handleCreateQueue} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="queueName" className="text-lg">Queue Name</Label>
               <Input
