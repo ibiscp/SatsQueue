@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SatsQueue
+
+SatsQueue is a decentralized queue management system that revolutionizes the waiting experience for customers at restaurants and other venues.
+
+## Problem
+
+Waiting in long queues at restaurants and other venues can be frustrating for customers, and current queue systems offer no flexibility for those who wish to move up faster. There's a need for a more dynamic approach that allows users to influence their position in the queue while maintaining fairness and transparency.
+
+## Solution
+
+SatsQueue introduces a decentralized queue system where users can enter a virtual queue and boost their chances of being served sooner by depositing sats via the Lightning Network. The more sats a user deposits, the higher their probability of being selected next. This creates an engaging, fair, and flexible queue experience for both customers and businesses.
+
+### Key Features
+
+- **Queue Joining**: Users can join a virtual queue for an establishment.
+- **Probability Boost**: Users can deposit sats to increase their chance of being selected next.
+- **Dynamic Sorting**: The system sorts users based on their deposits, with higher contributions leading to better odds.
+- **Lightning Network Integration**: Instant transactions via the Lightning Network enable quick and seamless participation.
 
 ## Getting Started
 
-First, run the development server:
+To run this project locally:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Clone the repository
+2. Install dependencies with `npm install`
+3. Set up your environment variables in a `.env` file
+4. Run the development server with `npm run dev`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Technologies Used
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- React
+- TypeScript
+- Vite
+- Firebase
+- Lightning Network
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Contributing
 
-## Learn More
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-To learn more about Next.js, take a look at the following resources:
+## License
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is licensed under the MIT License.
