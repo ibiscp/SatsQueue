@@ -48,7 +48,6 @@ export default function Admin() {
 
   const updateQueueState = (queueData: any) => {
     setQueue(Object.values(queueData.currentQueue || {}));
-    // setRemovedItems(Object.values(queueData.servedCustomers || {}).sort((a, b) => b.servedAt - a.servedAt));
     const sortedRemovedItems = Object.values(queueData.servedCustomers || {}) as RemovedItem[];
     sortedRemovedItems.sort((a, b) => b.servedAt - a.servedAt);
     setRemovedItems(sortedRemovedItems);
@@ -85,8 +84,6 @@ export default function Admin() {
         <Card className="w-full md:w-1/3 shadow-lg flex flex-col">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Scan to Enter the Queue</CardTitle>
-            <CardDescription>Queue Name: {queueName}</CardDescription>
-            <CardDescription>Queue ID: {uuid}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col justify-center items-center flex-grow">
             <QRCodeSVG value={qrValue} size={250} />

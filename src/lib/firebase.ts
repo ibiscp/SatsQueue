@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getDatabase, ref, set, get, remove, onValue } from "firebase/database";
+import { getDatabase, ref, set, get, remove, onValue, update, increment } from "firebase/database";
 import { getAuth } from "firebase/auth";
 import { nanoid } from 'nanoid';
 
@@ -31,13 +31,15 @@ if (typeof window !== "undefined" && !getApps().length) {
 export { app, analytics, db, auth };
 
 // Function to create a new queue with 10 mocked users
-export const createQueue = async (queueName: string) => {
+export const createQueue = async (queueName: string, lnurl: string) => {
   const queueId = nanoid();
-  const newQueueRef = ref(db, `queues/${queueName}`);
+  const normalizedQueueName = queueName.toLowerCase();
+  const newQueueRef = ref(db, `queues/${normalizedQueueName}`);
   const mockedUsers = generateMockedUsers(10);
   await set(newQueueRef, {
     id: queueId,
-    name: queueName,
+    name: queueName, // Keep original name for display
+    lnurl: lnurl,
     createdAt: Date.now(),
     isActive: true,
     totalSats: mockedUsers.reduce((total, user) => total + user.sats, 0),
@@ -47,6 +49,20 @@ export const createQueue = async (queueName: string) => {
   return queueId;
 };
 
+// Function to check if a queue exists
+export const checkQueueExists = async (queueName: string): Promise<boolean> => {
+  const queuesRef = ref(db, 'queues');
+  const snapshot = await get(queuesRef);
+  
+  if (snapshot.exists()) {
+    const queues = snapshot.val();
+    return Object.keys(queues).some(key => key.toLowerCase() === queueName.toLowerCase());
+  }
+  
+  return false;
+};
+
+// Function to generate mocked users
 const generateMockedUsers = (count: number) => {
   const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eva', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack'];
   return Array.from({length: count}, (_, i) => ({
@@ -59,28 +75,29 @@ const generateMockedUsers = (count: number) => {
 
 // Function to add a user to a queue
 export const addUserToQueue = async (queueName: string, userName: string, sats: number) => {
+  const normalizedQueueName = queueName.toLowerCase();
   const userId = nanoid();
-  await set(ref(db, `queues/${queueName}/currentQueue/${userId}`), {
+  await set(ref(db, `queues/${normalizedQueueName}/currentQueue/${userId}`), {
     id: userId,
     name: userName,
     createdAt: Date.now(),
     sats: sats
   });
   // Update total sats
-  const totalSatsRef = ref(db, `queues/${queueName}/totalSats`);
+  const totalSatsRef = ref(db, `queues/${normalizedQueueName}/totalSats`);
   const currentTotal = (await get(totalSatsRef)).val() || 0;
   await set(totalSatsRef, currentTotal + sats);
+  return userId;
 };
 
 // Function to remove a user from the queue (when served)
 export const removeUserFromQueue = async (queueName: string, userId: string) => {
-  const userRef = ref(db, `queues/${queueName}/currentQueue/${userId}`);
+  const normalizedQueueName = queueName.toLowerCase();
+  const userRef = ref(db, `queues/${normalizedQueueName}/currentQueue/${userId}`);
   const userData = (await get(userRef)).val();
   if (userData) {
-    // Remove from currentQueue
     await remove(userRef);
-    // Add to servedCustomers with all original data plus servedAt
-    await set(ref(db, `queues/${queueName}/servedCustomers/${userId}`), {
+    await set(ref(db, `queues/${normalizedQueueName}/servedCustomers/${userId}`), {
       ...userData,
       servedAt: Date.now()
     });
@@ -89,18 +106,25 @@ export const removeUserFromQueue = async (queueName: string, userId: string) => 
 
 // Function to get queue data
 export const getQueueData = async (queueName: string) => {
-  const queueRef = ref(db, `queues/${queueName}`);
+  const normalizedQueueName = queueName.toLowerCase();
+  const queueRef = ref(db, `queues/${normalizedQueueName}`);
   const snapshot = await get(queueRef);
   return snapshot.val();
 };
 
 // Function to listen for queue updates
 export const listenToQueueUpdates = (queueName: string, callback: (data: any) => void) => {
-  const queueRef = ref(db, `queues/${queueName}`);
+  const normalizedQueueName = queueName.toLowerCase();
+  const queueRef = ref(db, `queues/${normalizedQueueName}`);
   return onValue(queueRef, (snapshot) => {
     const data = snapshot.val();
     callback(data);
   });
 };
 
-// More functions for updating user data, fetching queue information, etc.
+// Function to update the sats for a user
+export const updateUserSats = async (queueName: string, userId: string, sats: number) => {
+  const normalizedQueueName = queueName.toLowerCase();
+  const queueRef = ref(db, `queues/${normalizedQueueName}/currentQueue/${userId}`);
+  await update(queueRef, { sats: increment(sats) });
+};

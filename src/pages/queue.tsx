@@ -2,11 +2,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@radix-ui/react-label';
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { X } from 'lucide-react'; // Import the X icon for the close button
-import { getQueueData, addUserToQueue, listenToQueueUpdates } from '@/lib/firebase';
+import { X } from 'lucide-react';
+import { getQueueData, addUserToQueue, listenToQueueUpdates, updateUserSats } from '@/lib/firebase';
+import { LightningAddress } from "@getalby/lightning-tools";
+import { QRCodeSVG } from 'qrcode.react';
 
 // Update the QueueItem type to match the structure from Firebase
 type QueueItem = {
@@ -20,6 +22,141 @@ type RemovedItem = QueueItem & {
   servedAt: number;
 }
 
+const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess }) => {
+  const [invoice, setInvoice] = useState(null);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [amount, setAmount] = useState(10);
+  const [isPaid, setIsPaid] = useState(false);
+
+  const generateInvoice = useCallback(async () => {
+    console.log('Generating invoice for amount:', amount);
+    if (amount <= 0) {
+      setError('Amount must be greater than 0');
+      return;
+    }
+    try {
+      setIsLoading(true);
+      setError('');
+      const ln = new LightningAddress(lnurl);
+      await ln.fetch();
+      const invoiceObj = await ln.requestInvoice({ satoshi: amount });
+      setInvoice(invoiceObj);
+    } catch (err) {
+      setError(`Failed to generate Lightning invoice: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [amount, lnurl]);
+
+  useEffect(() => {
+    if (amount > 0) {
+      generateInvoice();
+    } else {
+      setInvoice(null);
+      setError('');
+    }
+  }, [generateInvoice, amount]);
+
+  useEffect(() => {
+    let intervalId;
+    if (invoice && !isPaid) {
+      intervalId = setInterval(async () => {
+        try {
+          const paid = await invoice.isPaid();
+          if (paid) {
+            setIsPaid(true);
+            await updateUserSats(queueId, userId, amount);
+            onPaymentSuccess(amount);
+            clearInterval(intervalId);
+          }
+        } catch (err) {
+          console.error("Error checking payment:", err);
+        }
+      }, 1000);
+    }
+    return () => clearInterval(intervalId);
+  }, [invoice, isPaid, queueId, userId, amount, onPaymentSuccess]);
+
+  const handleAmountChange = (e) => {
+    const newAmount = Number(e.target.value);
+    setAmount(newAmount);
+    setInvoice(null);
+    setIsPaid(false);
+    setError('');
+  };
+
+  const handleTopUp = () => {
+    setIsPaid(false);
+    generateInvoice();
+  };
+
+  return (
+    <Card className="w-full shadow-lg">
+      <CardHeader>
+        <CardTitle className="text-2xl">Add Sats to Your Queue Position</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isPaid ? (
+          <>
+            <Alert>
+              <AlertTitle>Payment Received!</AlertTitle>
+              <AlertDescription>Your position in the queue has been updated.</AlertDescription>
+            </Alert>
+            <Button onClick={handleTopUp}>Top Up</Button>
+          </>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount (sats)</Label>
+              <Input
+                id="amount"
+                type="number"
+                value={amount}
+                onChange={handleAmountChange}
+                min="1"
+              />
+            </div>
+            {error && (
+              <Alert variant="destructive">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <p>Scan this QR code with your Lightning wallet to add sats to your position in the queue:</p>
+            <div className="flex justify-center" style={{ height: '256px' }}>
+              {invoice ? (
+                <div className="animate-fade-in">
+                  <QRCodeSVG value={invoice.paymentRequest} size={256} />
+                </div>
+              ) : (
+                <div className="animate-pulse bg-gray-200 h-64 w-64"></div>
+              )}
+            </div>
+            <Button 
+              onClick={() => {
+                navigator.clipboard.writeText(invoice?.paymentRequest || '');
+                const button = document.getElementById('copyButton');
+                if (button) {
+                  button.textContent = 'Copied!';
+                  setTimeout(() => {
+                    button.textContent = 'Copy Invoice';
+                  }, 2000);
+                }
+              }}
+              className="w-full mt-2"
+              id="copyButton"
+              disabled={isLoading || !invoice}
+            >
+              Copy Invoice
+            </Button>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 export default function Queue() {
   const location = useLocation();
   const queueId = location.pathname.split('/').pop() || '';
@@ -27,24 +164,32 @@ export default function Queue() {
   const [removedItems, setRemovedItems] = useState<RemovedItem[]>([])
   const [identifier, setIdentifier] = useState('')
   const [showLightningIntro, setShowLightningIntro] = useState(false);
+  const [lnurl, setLnurl] = useState('');
+  const [userId, setUserId] = useState(null);
+  const [userJoined, setUserJoined] = useState(false);
+  const [userSats, setUserSats] = useState(0);
 
   useEffect(() => {
-    console.log('Queue ID:', queueId);
     const fetchQueueData = async () => {
       if (queueId) {
         const queueData = await getQueueData(queueId);
         if (queueData) {
           updateQueueState(queueData);
+          setLnurl(queueData.lnurl);
         }
-
-        // Set up real-time listener
-        const unsubscribe = listenToQueueUpdates(queueId, updateQueueState);
-        return () => unsubscribe();
       }
     };
 
     fetchQueueData();
-  }, [queueId])
+
+    // Set up real-time listener for queue updates
+    const unsubscribe = listenToQueueUpdates(queueId, (updatedQueueData) => {
+      updateQueueState(updatedQueueData);
+    });
+
+    // Clean up the listener when the component unmounts
+    return () => unsubscribe();
+  }, [queueId]);
 
   const updateQueueState = (queueData: any) => {
     setQueue(Object.values(queueData.currentQueue || {}));
@@ -57,15 +202,25 @@ export default function Queue() {
     e.preventDefault()
     if (identifier.trim() && queueId) {
       try {
-        await addUserToQueue(queueId, identifier.trim(), 0);
-        setIdentifier('')
-        setShowLightningIntro(true)
+        const newUserId = await addUserToQueue(queueId, identifier.trim(), 0);
+        setUserId(newUserId);
+        setUserJoined(true);
       } catch (error) {
         console.error("Error joining queue:", error);
-        // TODO: Show error message to user
+        alert("Failed to join the queue. Please try again.");
       }
     }
   }
+
+  const handlePaymentSuccess = (amount: number) => {
+    setUserSats(prevSats => prevSats + amount);
+    // Fetch the latest queue data after a successful payment
+    getQueueData(queueId).then(updatedQueueData => {
+      if (updatedQueueData) {
+        updateQueueState(updatedQueueData);
+      }
+    });
+  };
 
   // Sort the queue by sats (descending) and then by createdAt (ascending)
   const sortedQueue = [...queue].sort((a, b) => {
@@ -77,7 +232,7 @@ export default function Queue() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex flex-col items-center py-8 px-4">
-      <header className="w-full max-w-6xl mb-8 text-white text-center">
+      <header className="w-full max-w-md mb-8 text-white text-center">
         <h1 className="text-3xl font-bold mb-2 flex items-center justify-center">
           SatsQueue
           <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 ml-2" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -87,28 +242,46 @@ export default function Queue() {
       </header>
       
       <div className="w-full max-w-6xl flex flex-col md:flex-row gap-4">
-        <Card className="w-full md:w-1/2 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-2xl">Join the Queue</CardTitle>
-            <CardDescription>Queue ID: {queueId}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={joinQueue} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="identifier" className="text-lg">Your Name</Label>
-                <Input
-                  id="identifier"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Enter your name"
-                  required
-                  className="text-lg py-2"
-                />
-              </div>
-              <Button type="submit" className="w-full text-lg py-2">Enter Queue</Button>
-            </form>
-          </CardContent>
-        </Card>
+        <div className="w-full md:w-1/2">
+          {!userJoined ? (
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl">Join the Queue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={joinQueue} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="identifier" className="text-lg">Your Name</Label>
+                    <Input
+                      id="identifier"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      placeholder="Enter your name"
+                      required
+                      className="text-lg py-2"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full text-lg py-2">Enter Queue</Button>
+                </form>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <Card className="shadow-lg mb-4">
+                <CardContent className="pt-6">
+                  <p className="text-xl font-semibold">Welcome, {identifier}!</p>
+                  <p>Your current sats: {userSats}</p>
+                </CardContent>
+              </Card>
+              <LightningQRCode 
+                lnurl={lnurl} 
+                queueId={queueId}
+                userId={userId}
+                onPaymentSuccess={handlePaymentSuccess}
+              />
+            </>
+          )}
+        </div>
 
         <Card className="w-full md:w-1/2 shadow-lg flex flex-col">
           <CardHeader>
