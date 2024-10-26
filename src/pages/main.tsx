@@ -77,7 +77,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center px-4">
       <div className="flex-grow flex items-center justify-center w-full">
-        <Card className="w-full -mt-36 max-w-md shadow-lg bg-white bg-opacity-90">
+        <Card className="w-full -mt-36 max-w-md shadow-lg bg-white bg-opacity-90 transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md">
           <CardHeader>
             <CardTitle className="text-2xl">Create a Queue</CardTitle>
             <CardDescription>Enter queue details to get started</CardDescription>
@@ -93,7 +93,7 @@ export default function Home() {
                     onChange={(e) => setQueueName(e.target.value)}
                     placeholder="Enter queue name"
                     required
-                    className="text-lg py-2 pr-10"
+                    className="text-lg py-2 pr-10 transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:outline-none"
                   />
                   {queueName && (
                     isValidQueueName && isQueueNameAvailable ? (
@@ -119,7 +119,7 @@ export default function Home() {
                     onChange={(e) => setWalletAddress(e.target.value)}
                     placeholder="Enter wallet address"
                     required
-                    className="text-lg py-2 pr-10"
+                    className="text-lg py-2 pr-10 transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:outline-none"
                   />
                   {walletAddress && (
                     isValidUrl ? (
@@ -132,7 +132,7 @@ export default function Home() {
               </div>
               <Button 
                 type="submit" 
-                className="w-full text-lg py-2" 
+                className="w-full text-lg py-2 transition-all duration-200 ease-in-out hover:bg-opacity-90 active:bg-opacity-100 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:outline-none" 
                 disabled={!isValidUrl || !queueName.trim() || !isValidQueueName || !isQueueNameAvailable}
               >
                 Create Queue
