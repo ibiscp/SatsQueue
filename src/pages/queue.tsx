@@ -233,10 +233,10 @@ export default function Queue() {
 
   return (
     <div className="min-h-screen flex flex-col items-center py-8 px-4">      
-      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-4">
-        <div className="w-full md:w-1/2">
+      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-8">
+        <div className="w-full md:w-1/2 space-y-8">
           {!userJoined ? (
-            <Card className="shadow-lg">
+            <Card className="shadow-lg transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
               <CardHeader>
                 <CardTitle className="text-2xl">Join the Queue</CardTitle>
               </CardHeader>
@@ -250,16 +250,16 @@ export default function Queue() {
                       onChange={(e) => setIdentifier(e.target.value)}
                       placeholder="Enter your name"
                       required
-                      className="text-lg py-2"
+                      className="text-lg py-2 transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:outline-none"
                     />
                   </div>
-                  <Button type="submit" className="w-full text-lg py-2">Enter Queue</Button>
+                  <Button type="submit" className="w-full text-lg py-2 transition-all duration-200 ease-in-out hover:bg-opacity-90 active:bg-opacity-100 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:outline-none">Enter Queue</Button>
                 </form>
               </CardContent>
             </Card>
           ) : (
             <>
-              <Card className="shadow-lg mb-4">
+              <Card className="shadow-lg mb-4 transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
                 <CardContent className="pt-6">
                   <p className="text-xl font-semibold">Welcome, {identifier}!</p>
                   <p>Your current sats: {userSats}</p>
@@ -275,7 +275,7 @@ export default function Queue() {
           )}
         </div>
 
-        <Card className="w-full md:w-1/2 shadow-lg flex flex-col">
+        <Card className="w-full md:w-1/2 shadow-lg flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
           <CardHeader>
             <CardTitle className="text-2xl">Queue Status</CardTitle>
           </CardHeader>
@@ -314,7 +314,7 @@ export default function Queue() {
 
       {showLightningIntro && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl shadow-lg relative">
+          <Card className="w-full max-w-2xl shadow-lg relative transition-all duration-300 ease-in-out hover:shadow-xl">
             <Button 
               className="absolute top-2 right-2 p-2" 
               variant="ghost" 
