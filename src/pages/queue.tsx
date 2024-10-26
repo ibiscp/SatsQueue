@@ -231,7 +231,7 @@ export default function Queue() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex flex-col items-center py-8 px-4">
+    <div className="min-h-screen flex flex-col items-center py-8 px-4">
       <header className="w-full max-w-md mb-8 text-white text-center">
         <h1 className="text-3xl font-bold mb-2 flex items-center justify-center">
           SatsQueue

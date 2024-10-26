@@ -75,7 +75,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex flex-col items-center py-8 px-4">
+    <div className="min-h-screen flex flex-col items-center py-8 px-4">
       <header className="w-full max-w-md mb-8 text-white text-center">
         <h1 className="text-3xl font-bold mb-2 flex items-center justify-center">
           SatsQueue
@@ -86,7 +86,7 @@ export default function Home() {
       </header>
 
       <div className="flex-grow flex items-center justify-center w-full">
-        <Card className="w-full max-w-md shadow-lg">
+        <Card className="w-full max-w-md shadow-lg bg-white bg-opacity-90">
           <CardHeader>
             <CardTitle className="text-2xl">Create a Queue</CardTitle>
             <CardDescription>Enter queue details to get started</CardDescription>
