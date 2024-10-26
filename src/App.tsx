@@ -5,6 +5,7 @@ import Queue from './pages/queue'
 import Admin from './pages/admin'
 import { QueueProvider } from './context/QueueContext'
 import WAVES from 'vanta/dist/vanta.waves.min'
+import SharedTitle from './components/ui/SharedTitle'
 
 function App() {
   const [vantaEffect, setVantaEffect] = useState(null)
@@ -37,6 +38,9 @@ function App() {
     <div ref={vantaRef} className="min-h-screen">
       <Router>
         <QueueProvider>
+          <div className='min-w-screen flex items-center justify-center pt-6'>
+            <SharedTitle />
+          </div>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/:name" element={<Queue />} />

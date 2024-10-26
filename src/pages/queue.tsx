@@ -210,6 +210,7 @@ export default function Queue() {
         alert("Failed to join the queue. Please try again.");
       }
     }
+
   }
 
   const handlePaymentSuccess = (amount: number) => {
@@ -231,16 +232,7 @@ export default function Queue() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-8 px-4">
-      <header className="w-full max-w-md mb-8 text-white text-center">
-        <h1 className="text-3xl font-bold mb-2 flex items-center justify-center">
-          SatsQueue
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 ml-2" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-          </svg>
-        </h1>
-      </header>
-      
+    <div className="min-h-screen flex flex-col items-center py-8 px-4">      
       <div className="w-full max-w-6xl flex flex-col md:flex-row gap-4">
         <div className="w-full md:w-1/2">
           {!userJoined ? (
