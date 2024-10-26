@@ -71,9 +71,8 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen flex flex-col items-center py-8 px-4">
-      
-      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-4">
-        <Card className="w-full md:w-1/3 shadow-lg flex flex-col">
+      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-8">
+        <Card className="w-full md:w-1/3 shadow-lg flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Scan to Enter the Queue</CardTitle>
           </CardHeader>
@@ -92,7 +91,7 @@ export default function Admin() {
           </CardContent>
         </Card>
 
-        <Card className="w-full md:w-1/3 shadow-lg flex flex-col">
+        <Card className="w-full md:w-1/3 shadow-lg flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Current Queue</CardTitle>
           </CardHeader>
@@ -115,7 +114,7 @@ export default function Admin() {
           </CardContent>
           <div className="p-4 border-t">
             <Button
-              className="w-full bg-red-500 hover:bg-red-600 text-white"
+              className="w-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200 ease-in-out focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none"
               onClick={handleCallNext}
             >
               Call next
@@ -123,7 +122,7 @@ export default function Admin() {
           </div>
         </Card>
 
-        <Card className="w-full md:w-1/3 shadow-lg flex flex-col">
+        <Card className="w-full md:w-1/3 shadow-lg flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Recently Called</CardTitle>
           </CardHeader>
