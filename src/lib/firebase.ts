@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid';
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL, // Updated to use env variable
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
@@ -69,18 +69,20 @@ const generateMockedUsers = (count: number) => {
     id: nanoid(),
     name: names[i],
     createdAt: Date.now() - Math.random() * 3600000, // Random join time within the last hour
-    sats: Math.floor(Math.random() * 200) + 50 // Random sats between 50 and 250
+    sats: Math.floor(Math.random() * 200) + 50, // Random sats between 50 and 250
+    nostrPubkey: null
   }));
 };
 
 // Function to add a user to a queue
-export const addUserToQueue = async (queueName: string, userName: string, sats: number) => {
+export const addUserToQueue = async (queueName: string, userName: string, nostrPubkey: string | null, sats: number) => {
   const normalizedQueueName = queueName.toLowerCase();
   const userId = nanoid();
   await set(ref(db, `queues/${normalizedQueueName}/currentQueue/${userId}`), {
     id: userId,
     name: userName,
     createdAt: Date.now(),
+    nostrPubkey: nostrPubkey,
     sats: sats
   });
   // Update total sats

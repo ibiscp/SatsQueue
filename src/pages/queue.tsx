@@ -9,6 +9,7 @@ import { X } from 'lucide-react';
 import { getQueueData, addUserToQueue, listenToQueueUpdates, updateUserSats } from '@/lib/firebase';
 import { LightningAddress } from "@getalby/lightning-tools";
 import { QRCodeSVG } from 'qrcode.react';
+import { getNostrName, sendNostrPrivateMessage } from '../lib/nostr';
 
 // Update the QueueItem type to match the structure from Firebase
 type QueueItem = {
@@ -16,13 +17,21 @@ type QueueItem = {
   id: string;
   createdAt: number;
   sats: number;
+  nostrPubkey?: string;
 }
 
 type RemovedItem = QueueItem & {
   servedAt: number;
 }
 
-const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess }) => {
+// Extend the Window interface to include webln
+// declare global {
+//   interface Window {
+//     webln: any;
+//   }
+// }
+
+const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) => {
   const [invoice, setInvoice] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -42,6 +51,18 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess }) => {
       await ln.fetch();
       const invoiceObj = await ln.requestInvoice({ satoshi: amount });
       setInvoice(invoiceObj);
+
+      // await window.webln.enable();
+      // const response = await window.webln.requestPayment(invoiceObj.paymentRequest);
+
+      // const paid = invoiceObj.validatePreimage(response.preimage);
+
+      // if (paid) {
+      //   console.log('Payment successful!');
+      // }
+
+      // console.log('Payment response:', response);
+
     } catch (err) {
       setError(`Failed to generate Lightning invoice: ${err.message}`);
     } finally {
@@ -69,6 +90,17 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess }) => {
             await updateUserSats(queueId, userId, amount);
             onPaymentSuccess(amount);
             clearInterval(intervalId);
+
+            // Send Nostr message
+            if (pubkey) {
+              const message = `⚡️ Congratulations! You paid ${amount} sats to increase your priority in the list for ${queueId}! 🚀`;
+              try {
+                await sendNostrPrivateMessage(pubkey, message);
+                console.log('Nostr message sent successfully');
+              } catch (error) {
+                console.error('Error sending Nostr message:', error);
+              }
+            }
           }
         } catch (err) {
           console.error("Error checking payment:", err);
@@ -76,7 +108,7 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess }) => {
       }, 1000);
     }
     return () => clearInterval(intervalId);
-  }, [invoice, isPaid, queueId, userId, amount, onPaymentSuccess]);
+  }, [invoice, isPaid, queueId, userId, amount, onPaymentSuccess, pubkey]);
 
   const handleAmountChange = (e) => {
     const newAmount = Number(e.target.value);
@@ -168,6 +200,8 @@ export default function Queue() {
   const [userId, setUserId] = useState(null);
   const [userJoined, setUserJoined] = useState(false);
   const [userSats, setUserSats] = useState(0);
+  const [userName, setUserName] = useState('');
+  const [userPubkey, setUserPubkey] = useState('');
 
   useEffect(() => {
     const fetchQueueData = async () => {
@@ -202,9 +236,25 @@ export default function Queue() {
     e.preventDefault()
     if (identifier.trim() && queueId) {
       try {
-        const newUserId = await addUserToQueue(queueId, identifier.trim(), 0);
+        let npub = identifier.trim();
+        let { name, pubkey } = await getNostrName(npub);
+
+        if (!name) {
+          name = npub;
+          npub = null;
+        }
+
+        const newUserId = await addUserToQueue(queueId, name, pubkey, 0);
         setUserId(newUserId);
         setUserJoined(true);
+        setUserName(name);
+        setUserPubkey(pubkey);
+
+        // Send Nostr message
+        if (pubkey) {
+          const message = `🎉 You are in the waiting list for ${queueId}! 🚀`;
+          await sendNostrPrivateMessage(pubkey, message);
+        }
       } catch (error) {
         console.error("Error joining queue:", error);
         alert("Failed to join the queue. Please try again.");
@@ -243,12 +293,12 @@ export default function Queue() {
               <CardContent>
                 <form onSubmit={joinQueue} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="identifier" className="text-lg">Your Name</Label>
+                    <Label htmlFor="identifier" className="text-lg">Your Name or Nostr npub</Label>
                     <Input
                       id="identifier"
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="Enter your name"
+                      placeholder="Enter your name or Nostr npub"
                       required
                       className="text-lg py-2 transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:outline-none"
                     />
@@ -261,7 +311,7 @@ export default function Queue() {
             <>
               <Card className="shadow-lg mb-4 transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
                 <CardContent className="pt-6">
-                  <p className="text-xl font-semibold">Welcome, {identifier}!</p>
+                  <p className="text-xl font-semibold">Welcome, {userName}!</p>
                   <p>Your current sats: {userSats}</p>
                 </CardContent>
               </Card>
@@ -270,6 +320,7 @@ export default function Queue() {
                 queueId={queueId}
                 userId={userId}
                 onPaymentSuccess={handlePaymentSuccess}
+                pubkey={userPubkey}
               />
             </>
           )}

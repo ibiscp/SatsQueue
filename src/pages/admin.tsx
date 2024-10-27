@@ -5,12 +5,14 @@ import { useQueue } from '@/context/QueueContext';
 import { Button } from '@/components/ui/button';
 import { useParams } from 'react-router-dom';
 import { getQueueData, removeUserFromQueue, listenToQueueUpdates } from '@/lib/firebase';
+import { sendNostrPrivateMessage } from '@/lib/nostr';
 
 type QueueItem = {
   name: string;
   id: string;
   createdAt: number;
   sats: number;
+  nostrPubkey?: string;
 }
 
 type RemovedItem = QueueItem & {
@@ -66,6 +68,17 @@ export default function Admin() {
       const removedItem = sortedQueue[0];
       await removeUserFromQueue(uuid, removedItem.id);
       // The queue will be updated automatically through the real-time listener
+
+      // Send Nostr message to the called user
+      if (removedItem.nostrPubkey) {
+        const message = `🔔 You've been called for ${queueName || uuid}! Please come to the counter. 🎉`;
+        try {
+          await sendNostrPrivateMessage(removedItem.nostrPubkey, message);
+          console.log('Nostr message sent successfully');
+        } catch (error) {
+          console.error('Error sending Nostr message:', error);
+        }
+      }
     }
   };
 
