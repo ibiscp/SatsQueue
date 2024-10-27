@@ -5,12 +5,12 @@ import { Label } from '@radix-ui/react-label';
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { getQueueData, addUserToQueue, listenToQueueUpdates, updateUserSats } from '@/lib/firebase';
-import { LightningAddress } from "@getalby/lightning-tools";
 import { QRCodeSVG } from 'qrcode.react';
 import { getNostrName, sendNostrPrivateMessage } from '../lib/nostr';
 import Footer from '@/components/ui/footer';
+import { generateInvoice } from '@/lib/lightning';
 
 // Update the QueueItem type to match the structure from Firebase
 type QueueItem = {
@@ -40,33 +40,25 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
   const [amount, setAmount] = useState(10);
   const [isPaid, setIsPaid] = useState(false);
 
-  const generateInvoice = useCallback(async () => {
+  const handleGenerateInvoice = useCallback(async () => {
     console.log('Generating invoice for amount:', amount);
     if (amount <= 0) {
       setError('Amount must be greater than 0');
       return;
     }
+
     try {
       setIsLoading(true);
       setError('');
-      const ln = new LightningAddress(lnurl);
-      await ln.fetch();
-      const invoiceObj = await ln.requestInvoice({ satoshi: amount });
-      setInvoice(invoiceObj);
-
-      // await window.webln.enable();
-      // const response = await window.webln.requestPayment(invoiceObj.paymentRequest);
-
-      // const paid = invoiceObj.validatePreimage(response.preimage);
-
-      // if (paid) {
-      //   console.log('Payment successful!');
-      // }
-
-      // console.log('Payment response:', response);
-
-    } catch (err) {
-      setError(`Failed to generate Lightning invoice: ${err.message}`);
+      
+      const result = await generateInvoice(lnurl, amount);
+      
+      if (result.error) {
+        setError(result.error);
+        setInvoice(null);
+      } else {
+        setInvoice(result.invoice);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -74,12 +66,12 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
 
   useEffect(() => {
     if (amount > 0) {
-      generateInvoice();
+      handleGenerateInvoice();
     } else {
       setInvoice(null);
       setError('');
     }
-  }, [generateInvoice, amount]);
+  }, [handleGenerateInvoice, amount]);
 
   useEffect(() => {
     let intervalId;
@@ -122,13 +114,12 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
 
   const handleTopUp = () => {
     setIsPaid(false);
-    generateInvoice();
+    handleGenerateInvoice();
   };
-
   return (
     <Card className="w-full shadow-lg">
       <CardHeader>
-        <CardTitle className="text-2xl">Add Sats to Your Queue Position</CardTitle>
+        <CardTitle className="text-2xl">Add Sats to Your Position</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {isPaid ? (
@@ -140,7 +131,7 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
             <Button onClick={handleTopUp}>Top Up</Button>
           </>
         ) : (
-          <>
+          <div className="flex flex-col">
             <div className="space-y-2">
               <Label htmlFor="amount">Amount (sats)</Label>
               <Input
@@ -157,8 +148,7 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            <p>Scan this QR code with your Lightning wallet to add sats to your position in the queue:</p>
-            <div className="flex justify-center" style={{ height: '256px' }}>
+            <div className="flex justify-center items-center my-4">
               {invoice ? (
                 <div className="animate-fade-in">
                   <QRCodeSVG value={invoice.paymentRequest} size={256} />
@@ -178,13 +168,13 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
                   }, 2000);
                 }
               }}
-              className="w-full mt-2"
+              className="w-full"
               id="copyButton"
               disabled={isLoading || !invoice}
             >
               Copy Invoice
             </Button>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -197,7 +187,6 @@ export default function Queue() {
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [removedItems, setRemovedItems] = useState<RemovedItem[]>([])
   const [identifier, setIdentifier] = useState('')
-  const [showLightningIntro, setShowLightningIntro] = useState(false);
   const [lnurl, setLnurl] = useState('');
   const [userId, setUserId] = useState(() => {
     // Initialize from localStorage
@@ -220,6 +209,7 @@ export default function Queue() {
     return localStorage.getItem(`${queueId}_userPubkey`) || '';
   });
   const [observation, setObservation] = useState(''); // Add this line
+  const [isCheckingName, setIsCheckingName] = useState(false);
 
   // Add useEffect to save state changes to localStorage
   useEffect(() => {
@@ -235,6 +225,7 @@ export default function Queue() {
       if (queueId) {
         const queueData = await getQueueData(queueId);
         if (queueData) {
+          console.log('Initial queue data:', queueData); // Add logging
           updateQueueState(queueData);
           setLnurl(queueData.lnurl);
         }
@@ -245,7 +236,10 @@ export default function Queue() {
 
     // Set up real-time listener for queue updates
     const unsubscribe = listenToQueueUpdates(queueId, (updatedQueueData) => {
-      updateQueueState(updatedQueueData);
+      console.log('Queue update received:', updatedQueueData); // Add logging
+      if (updatedQueueData) {
+        updateQueueState(updatedQueueData);
+      }
     });
 
     // Clean up the listener when the component unmounts
@@ -255,8 +249,9 @@ export default function Queue() {
   // Add effect to fetch nostr name when identifier changes
   useEffect(() => {
     const fetchNostrName = async () => {
-      if (identifier.startsWith('npub')) {
+      if (identifier.startsWith('npub') || identifier.startsWith('nprofile') || identifier.includes('@')) {
         try {
+          setIsCheckingName(true);
           const { name, pubkey } = await getNostrName(identifier);
           if (name) {
             setUserName(name);
@@ -264,6 +259,8 @@ export default function Queue() {
           }
         } catch (error) {
           console.error("Error fetching nostr name:", error);
+        } finally {
+          setIsCheckingName(false);
         }
       }
     };
@@ -328,19 +325,21 @@ export default function Queue() {
     return a.createdAt - b.createdAt;
   });
 
-  // // Add this function to the Queue component
-  // const clearUserState = () => {
-  //   localStorage.removeItem(`${queueId}_userId`);
-  //   localStorage.removeItem(`${queueId}_userJoined`);
-  //   localStorage.removeItem(`${queueId}_userSats`);
-  //   localStorage.removeItem(`${queueId}_userName`);
-  //   localStorage.removeItem(`${queueId}_userPubkey`);
-  //   setUserId(null);
-  //   setUserJoined(false);
-  //   setUserSats(0);
-  //   setUserName('');
-  //   setUserPubkey('');
-  // };
+  // Add this function to handle logout
+  const handleLogout = () => {
+    localStorage.removeItem(`${queueId}_userId`);
+    localStorage.removeItem(`${queueId}_userJoined`);
+    localStorage.removeItem(`${queueId}_userSats`);
+    localStorage.removeItem(`${queueId}_userName`);
+    localStorage.removeItem(`${queueId}_userPubkey`);
+    setUserId(null);
+    setUserJoined(false);
+    setUserSats(0);
+    setUserName('');
+    setUserPubkey('');
+    setIdentifier('');
+    setObservation('');
+  };
 
   return (
     <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center">      
@@ -354,16 +353,23 @@ export default function Queue() {
               <CardContent>
                 <form onSubmit={joinQueue} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="identifier" className="text-lg">Your Name, Nostr npub, nprofile or Nostr NIP-05</Label>
-                    <Input
-                      id="identifier"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="Enter your name or Nostr npub"
-                      required
-                      className="text-lg py-2 transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:outline-none"
-                    />
-                    {userName && identifier.startsWith('npub') && (
+                    <Label htmlFor="identifier" className="text-lg">Your Name, Nostr npub, nprofile or NIP-05</Label>
+                    <div className="relative">
+                      <Input
+                        id="identifier"
+                        value={identifier}
+                        onChange={(e) => setIdentifier(e.target.value)}
+                        placeholder="Enter your name or Nostr npub"
+                        required
+                        className="text-lg py-2 pr-10 transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:outline-none"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        {isCheckingName && (
+                          <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                        )}
+                      </div>
+                    </div>
+                    {userName && (identifier.startsWith('npub') || identifier.startsWith('nprofile') || identifier.includes('@')) && (
                       <p className="text-sm text-gray-600">Nostr name: {userName}</p>
                     )}
                   </div>
@@ -389,6 +395,13 @@ export default function Queue() {
                 <CardContent className="pt-6">
                   <p className="text-3xl font-bold mb-2">Welcome, {userName}!</p>
                   <p>Your current position: {userSats} sats ({sortedQueue.findIndex(item => item.id === userId) + 1} of {sortedQueue.length})</p>
+                  <Button 
+                    onClick={handleLogout}
+                    variant="destructive"
+                    className="mt-4 w-full"
+                  >
+                    Logout
+                  </Button>
                 </CardContent>
               </Card>
               <LightningQRCode 
@@ -402,11 +415,11 @@ export default function Queue() {
           )}
         </div>
 
-        <Card className="w-full md:w-1/2 shadow-lg flex flex-col p-4">
+        <Card className="w-full md:w-1/2 shadow-lg flex flex-col h-[calc(100vh-12rem)] p-4">
           <CardHeader>
             <CardTitle className="text-2xl">Queue Status</CardTitle>
           </CardHeader>
-          <CardContent className="flex-grow overflow-hidden">
+          <CardContent className="flex-grow overflow-hidden flex flex-col">
             {/* Last called section - fixed outside scroll area */}
             {removedItems.length > 0 && (
               <div className="mb-4 p-2 bg-gray-100 rounded">
@@ -425,7 +438,7 @@ export default function Queue() {
             )}
 
             {/* Scrollable queue section */}
-            <div className="max-h-[calc(100vh-32rem)] overflow-y-auto pr-2">
+            <div className="flex-grow overflow-y-auto pr-2">
               {sortedQueue.length === 0 ? (
                 <p className="text-center text-gray-500">No one in queue yet</p>
               ) : (
@@ -451,7 +464,7 @@ export default function Queue() {
         </Card>
       </div>
 
-      {showLightningIntro && (
+      {/* {showLightningIntro && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-2xl shadow-lg relative transition-all duration-300 ease-in-out hover:shadow-xl">
             <Button 
@@ -497,7 +510,7 @@ export default function Queue() {
             </CardContent>
           </Card>
         </div>
-      )}
+      )} */}
       <Footer />
     </div>
   )

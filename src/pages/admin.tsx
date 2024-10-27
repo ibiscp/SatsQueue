@@ -165,7 +165,7 @@ export default function Admin() {
               ) : (
                 <>
                   {/* Current person called shown outside scroll area */}
-                  <div className="mb-4">
+                  <div className="mb-4 p-2 bg-gray-100 rounded">
                     <div className="text-3xl font-bold mb-2 text-center">{removedItems[0].name}</div>
                     <div className="text-sm text-gray-500 text-center">
                       <span>{removedItems[0].sats} sats</span>

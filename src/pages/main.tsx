@@ -6,8 +6,8 @@ import { Label } from "../components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { useQueue } from '../context/QueueContext'
 import { app, analytics, createQueue, checkQueueExists } from '../lib/firebase'
-import { LightningAddress } from "@getalby/lightning-tools";
-import { Check, X } from 'lucide-react';
+import { isValidLNURL } from '../lib/lightning';
+import { Check, X, Loader2 } from 'lucide-react';
 import Footer from '@/components/ui/footer';
 
 
@@ -17,6 +17,8 @@ export default function Home() {
   const [isValidUrl, setIsValidUrl] = useState(false)
   const [isValidQueueName, setIsValidQueueName] = useState(true)
   const [isQueueNameAvailable, setIsQueueNameAvailable] = useState(true)
+  const [isValidatingUrl, setIsValidatingUrl] = useState(false)
+  const [isValidatingQueueName, setIsValidatingQueueName] = useState(false)
   const navigate = useNavigate()
   const { setQueueName:setQueueNameContext } = useQueue()
 
@@ -26,29 +28,75 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
     const validateUrl = async () => {
       if (walletAddress.trim()) {
-        const isValid = await isValidLNURL(walletAddress);
-        setIsValidUrl(isValid);
+        setIsValidatingUrl(true);
+        try {
+          const isValid = await isValidLNURL(walletAddress);
+          setIsValidUrl(isValid);
+        } catch (error) {
+          setIsValidUrl(false);
+        }
+        setIsValidatingUrl(false);
       } else {
         setIsValidUrl(false);
+        setIsValidatingUrl(false);
       }
     };
-    validateUrl();
+
+    if (walletAddress.trim()) {
+      setIsValidatingUrl(true);
+      // Clear previous timeout
+      if (timeoutId) clearTimeout(timeoutId);
+      // Set new timeout
+      timeoutId = setTimeout(validateUrl, 500);
+    } else {
+      setIsValidUrl(false);
+      setIsValidatingUrl(false);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [walletAddress]);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
     const validateQueueName = async () => {
       if (queueName.trim()) {
-        setIsValidQueueName(/^[a-zA-Z0-9-_]+$/.test(queueName));
-        const exists = await checkQueueExists(queueName);
-        setIsQueueNameAvailable(!exists);
+        setIsValidatingQueueName(true);
+        const isValid = /^[a-zA-Z0-9-_]+$/.test(queueName);
+        setIsValidQueueName(isValid);
+        if (isValid) {
+          const exists = await checkQueueExists(queueName);
+          setIsQueueNameAvailable(!exists);
+        }
+        setIsValidatingQueueName(false);
       } else {
         setIsValidQueueName(true);
         setIsQueueNameAvailable(true);
+        setIsValidatingQueueName(false);
       }
     };
-    validateQueueName();
+
+    if (queueName.trim()) {
+      setIsValidatingQueueName(true);
+      // Clear previous timeout
+      if (timeoutId) clearTimeout(timeoutId);
+      // Set new timeout
+      timeoutId = setTimeout(validateQueueName, 500);
+    } else {
+      setIsValidQueueName(true);
+      setIsQueueNameAvailable(true);
+      setIsValidatingQueueName(false);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [queueName]);
 
   const handleCreateQueue = async (e: React.FormEvent) => {
@@ -62,17 +110,6 @@ export default function Home() {
         console.error("Error creating queue:", error);
         // TODO: Show error message to user
       }
-    }
-  }
-
-  const isValidLNURL = async (url: string) => {
-    try {
-      const ln = new LightningAddress(url);
-      await ln.fetch();
-      return !!ln.lnurlpData || !!ln.keysendData;
-    } catch (error) {
-      console.error("Error validating LNURL:", error);
-      return false;
     }
   }
 
@@ -98,10 +135,16 @@ export default function Home() {
                     className="text-lg py-2 pr-10 transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:outline-none"
                   />
                   {queueName && (
-                    isValidQueueName && isQueueNameAvailable ? (
-                      <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500" />
+                    isValidatingQueueName ? (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                      </div>
                     ) : (
-                      <X className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500" />
+                      isValidQueueName && isQueueNameAvailable ? (
+                        <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500" />
+                      ) : (
+                        <X className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500" />
+                      )
                     )
                   )}
                 </div>
@@ -113,7 +156,7 @@ export default function Home() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="walletAddress" className="text-lg">LNURL</Label>
+                <Label htmlFor="walletAddress" className="text-lg">Lightning Address or LNURL</Label>
                 <div className="relative">
                   <Input
                     id="walletAddress"
@@ -124,10 +167,16 @@ export default function Home() {
                     className="text-lg py-2 pr-10 transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:outline-none"
                   />
                   {walletAddress && (
-                    isValidUrl ? (
-                      <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500" />
+                    isValidatingUrl ? (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                      </div>
                     ) : (
-                      <X className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500" />
+                      isValidUrl ? (
+                        <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500" />
+                      ) : (
+                        <X className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500" />
+                      )
                     )
                   )}
                 </div>
@@ -135,7 +184,7 @@ export default function Home() {
               <Button 
                 type="submit" 
                 className="w-full text-lg py-2 transition-all duration-200 ease-in-out hover:bg-opacity-90 active:bg-opacity-100 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:outline-none" 
-                disabled={!isValidUrl || !queueName.trim() || !isValidQueueName || !isQueueNameAvailable}
+                disabled={!isValidUrl || !queueName.trim() || !isValidQueueName || !isQueueNameAvailable || isValidatingUrl || isValidatingQueueName}
               >
                 Create Queue
               </Button>

@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getDatabase, ref, set, get, remove, onValue, update, increment, push, serverTimestamp } from "firebase/database";
+import { getDatabase, ref, set, get, remove, onValue, update, increment, push } from "firebase/database";
 import { getAuth } from "firebase/auth";
 import { nanoid } from 'nanoid';
 
@@ -93,18 +93,21 @@ export const addUserToQueue = async (
   name: string, 
   nostrPubkey: string | undefined, 
   sats: number,
-  observation?: string // Add observation parameter
+  observation?: string
 ) => {
   const queueRef = ref(db, `queues/${queueId}/currentQueue`);
   const newUserRef = push(queueRef);
   
+  // Create timestamp on client side to ensure immediate availability
+  const timestamp = Date.now();
+  
   await set(newUserRef, {
     name,
     id: newUserRef.key,
-    createdAt: serverTimestamp(),
+    createdAt: timestamp, // Use client timestamp instead of serverTimestamp()
     sats,
     nostrPubkey,
-    observation // Add observation to the data
+    observation
   });
 
   return newUserRef.key;
