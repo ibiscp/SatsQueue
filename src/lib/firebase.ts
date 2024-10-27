@@ -89,28 +89,28 @@ const generateMockedUsers = (count: number) => {
 
 // Function to add a user to a queue
 export const addUserToQueue = async (
-  queueId: string, 
-  name: string, 
-  nostrPubkey: string | undefined, 
+  queueName: string, 
+  userName: string, 
+  nostrPubkey: string | null, 
   sats: number,
   observation?: string
 ) => {
-  const queueRef = ref(db, `queues/${queueId}/currentQueue`);
-  const newUserRef = push(queueRef);
-  
-  // Create timestamp on client side to ensure immediate availability
-  const timestamp = Date.now();
-  
-  await set(newUserRef, {
-    name,
-    id: newUserRef.key,
-    createdAt: timestamp, // Use client timestamp instead of serverTimestamp()
-    sats,
-    nostrPubkey,
-    observation
+  const normalizedQueueName = queueName.toLowerCase();
+  const userId = nanoid();
+  await set(ref(db, `queues/${normalizedQueueName}/currentQueue/${userId}`), {
+    id: userId,
+    name: userName,
+    createdAt: Date.now(),
+    nostrPubkey: nostrPubkey,
+    sats: sats,
+    observation: observation
   });
+  // Update total sats
+  const totalSatsRef = ref(db, `queues/${normalizedQueueName}/totalSats`);
+  const currentTotal = (await get(totalSatsRef)).val() || 0;
+  await set(totalSatsRef, currentTotal + sats);
 
-  return newUserRef.key;
+  return userId;
 };
 
 // Function to remove a user from the queue (when served)

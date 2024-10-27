@@ -116,7 +116,7 @@ export default function Home() {
   return (
     <div className="min-h-[calc(100vh-8rem)] flex flex-col">
       <div className="flex items-center justify-center px-4 py-8 flex-grow">
-        <Card className="w-full max-w-md shadow-lg bg-white bg-opacity-90 transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md">
+        <Card className="w-full max-w-md shadow-lg bg-white bg-opacity-90">
           <CardHeader>
             <CardTitle className="text-2xl">Create a Queue</CardTitle>
             <CardDescription>Enter queue details to get started</CardDescription>
