@@ -7,7 +7,7 @@ import { useParams } from 'react-router-dom';
 import { getQueueData, removeUserFromQueue, listenToQueueUpdates } from '@/lib/firebase';
 import { sendNostrPrivateMessage } from '@/lib/nostr';
 import Footer from '@/components/ui/footer';
-import { QrCode } from 'lucide-react';
+import { QrCode, Minus } from 'lucide-react';
 
 type QueueItem = {
   name: string;
@@ -75,7 +75,7 @@ export default function Admin() {
 
       // Send Nostr message to the called user
       if (removedItem.nostrPubkey) {
-        const message = `🔔 You've been called for ${queueName || uuid}! Please come to the counter. 🎉`;
+        const message = `🔔 You've been called for ${queueName || uuid}! 🎉`;
         try {
           await sendNostrPrivateMessage(removedItem.nostrPubkey, message);
           console.log('Nostr message sent successfully');
@@ -85,6 +85,22 @@ export default function Admin() {
       }
     }
   };
+
+  const handleCallUser = async (user: QueueItem) => {
+    if (uuid) {
+      await removeUserFromQueue(uuid, user.id);
+      if (user.nostrPubkey) {
+        const message = `🔔 You've been called for ${queueName || uuid}! 🎉`;
+        try {
+          await sendNostrPrivateMessage(user.nostrPubkey, message);
+          console.log('Nostr message sent successfully');
+        } catch (error) {
+          console.error('Error sending Nostr message:', error);
+        }
+      }
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center">
       <div className="w-full max-w-6xl p-6 flex-grow">
@@ -122,6 +138,14 @@ export default function Admin() {
               <CardTitle className="text-2xl">Current Queue</CardTitle>
             </CardHeader>
             <CardContent className="flex-grow overflow-hidden">
+              <div className="p-4 mt-auto">
+                <Button
+                  className="w-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200 ease-in-out focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none"
+                  onClick={handleCallNext}
+                >
+                Call next
+              </Button>
+            </div>
               <div className="h-full overflow-y-auto pr-2">
                 {sortedQueue.length === 0 ? (
                   <p className="text-center text-gray-500">No one in queue yet</p>
@@ -129,10 +153,18 @@ export default function Admin() {
                   <ul className="space-y-2">
                     {sortedQueue.map((item, index) => (
                       <li key={index} className="border-b py-2">
-                        <div className="grid grid-cols-3 gap-2 items-center">
+                        <div className="grid grid-cols-4 gap-2 items-center">
                           <span className="font-medium truncate">{item.name}</span>
                           <span className="text-sm text-gray-500 text-center">{new Date(item.createdAt).toLocaleTimeString()}</span>
                           <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
+                          <div className="flex justify-end">
+                            <Button
+                              onClick={() => handleCallUser(item)}
+                              className="bg-red-500 hover:bg-red-600 text-white text-sm py-1 w-8"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                         {item.observation && (
                           <div className="text-sm text-gray-500 mt-1 text-center">
@@ -145,14 +177,6 @@ export default function Admin() {
                 )}
               </div>
             </CardContent>
-            <div className="p-4 border-t mt-auto">
-              <Button
-                className="w-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200 ease-in-out focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none"
-                onClick={handleCallNext}
-              >
-                Call next
-              </Button>
-            </div>
           </Card>
 
           <Card className="w-full md:w-1/2 shadow-lg flex flex-col">

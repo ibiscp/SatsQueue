@@ -74,6 +74,7 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
     try {
       setIsLoading(true);
       setError('');
+      setInvoice(null);
       
       const result = await generateInvoice(lnurl, satAmount);
       
@@ -100,23 +101,42 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
             onPaymentSuccess(amount);
             clearInterval(intervalId);
 
-            // Send Nostr message
-            if (pubkey) {
-              let message;
-              // Check if topping up someone else by comparing userId with localStorage userId
-              const myUserId = localStorage.getItem(`${queueId}_userId`);
-              const isTopUpForOther = userId !== myUserId;
-              
-              if (isTopUpForOther && queueItem) {
-                message = `⚡️ You just topped up ${queueItem.name}'s position with ${amount} sats in ${queueId}! 🎉`;
-              } else {
-                message = `⚡️ You just topped up your position with ${amount} sats in ${queueId}! 🎉`;
+            // Send Nostr messages
+            const myUserId = localStorage.getItem(`${queueId}_userId`);
+            const isTopUpForOther = userId !== myUserId;
+            
+            if (isTopUpForOther && queueItem) {
+              // Send message to person who topped up
+              if (pubkey) {
+                const senderMessage = `⚡️ You just topped up ${queueItem.name}'s position with ${amount} sats in ${queueId}! 🎉`;
+                try {
+                  await sendNostrPrivateMessage(pubkey, senderMessage);
+                  console.log('Nostr message sent to sender successfully');
+                } catch (error) {
+                  console.error('Error sending Nostr message to sender:', error);
+                }
               }
-              try {
-                await sendNostrPrivateMessage(pubkey, message);
-                console.log('Nostr message sent successfully');
-              } catch (error) {
-                console.error('Error sending Nostr message:', error);
+
+              // Send message to person who received the top-up
+              if (queueItem.nostrPubkey) {
+                const recipientMessage = `⚡️ Someone just topped up your position with ${amount} sats in ${queueId}! 🎉`;
+                try {
+                  await sendNostrPrivateMessage(queueItem.nostrPubkey, recipientMessage);
+                  console.log('Nostr message sent to recipient successfully');
+                } catch (error) {
+                  console.error('Error sending Nostr message to recipient:', error);
+                }
+              }
+            } else {
+              // Send message for self top-up
+              if (pubkey) {
+                const message = `⚡️ You just topped up your position with ${amount} sats in ${queueId}! 🎉`;
+                try {
+                  await sendNostrPrivateMessage(pubkey, message);
+                  console.log('Nostr message sent successfully');
+                } catch (error) {
+                  console.error('Error sending Nostr message:', error);
+                }
               }
             }
           }
@@ -167,6 +187,7 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
                   variant="outline"
                   onClick={() => handleAmountClick(amt)}
                   className={`flex-1 ${amount === amt ? 'bg-blue-100' : ''}`}
+                  disabled={isLoading}
                 >
                   {amt}
                 </Button>
@@ -180,7 +201,11 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
             </Alert>
           )}
           <div className="flex justify-center items-center my-4">
-            {invoice ? (
+            {isLoading ? (
+              <div className="animate-pulse bg-gray-200 h-64 w-64 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : invoice ? (
               <div className="animate-fade-in">
                 <QRCodeSVG value={invoice.paymentRequest} size={256} />
               </div>
@@ -361,12 +386,11 @@ export default function Queue() {
     setIdentifier('');
     setObservation('');
   };
-
   return (
     <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center">      
       <div className="w-full max-w-6xl flex flex-col md:flex-row gap-8 flex-grow p-6">
-        <div className="w-full md:w-1/2">
-          <Card className="shadow-lg">
+        <div className="w-full md:w-1/2 flex flex-col h-[calc(100vh-12rem)]">
+          <Card className="shadow-lg flex-grow">
             {!userJoined ? (
               <>
                 <CardHeader>
@@ -447,61 +471,63 @@ export default function Queue() {
           </Card>
         </div>
 
-        <Card className="w-full md:w-1/2 shadow-lg flex flex-col h-[calc(100vh-12rem)] p-4">
-          <CardHeader>
-            <CardTitle className="text-2xl">Queue Status</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-grow overflow-hidden flex flex-col">
-            {removedItems.length > 0 && (
-              <div className="mb-4 p-2 bg-gray-100 rounded">
-                <div className="text-3xl font-bold mb-2 text-center">{removedItems[0].name}</div>
-                <div className="text-sm text-gray-500 text-center">
-                  <span>{removedItems[0].sats} sats</span>
-                  <span className="mx-2">•</span>
-                  <span>Waited: {Math.floor((removedItems[0].servedAt - removedItems[0].createdAt) / 60000)} minutes</span>
-                </div>
-                {removedItems[0].observation && (
-                  <div className="text-sm text-gray-500 mt-2 text-center italic">
-                    {removedItems[0].observation}
+        <div className="w-full md:w-1/2 flex flex-col h-[calc(100vh-12rem)]">
+          <Card className="shadow-lg flex-grow">
+            <CardHeader>
+              <CardTitle className="text-2xl">Queue Status</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow overflow-hidden flex flex-col">
+              {removedItems.length > 0 && (
+                <div className="mb-4 p-2 bg-gray-100 rounded">
+                  <div className="text-3xl font-bold mb-2 text-center">{removedItems[0].name}</div>
+                  <div className="text-sm text-gray-500 text-center">
+                    <span>{removedItems[0].sats} sats</span>
+                    <span className="mx-2">•</span>
+                    <span>Waited: {Math.floor((removedItems[0].servedAt - removedItems[0].createdAt) / 60000)} minutes</span>
                   </div>
+                  {removedItems[0].observation && (
+                    <div className="text-sm text-gray-500 mt-2 text-center italic">
+                      {removedItems[0].observation}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex-grow overflow-y-auto pr-2">
+                {sortedQueue.length === 0 ? (
+                  <p className="text-center text-gray-500">No one in queue yet</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {sortedQueue.map((item, index) => (
+                      <li key={index} className="border-b py-2">
+                        <div className="grid grid-cols-4 gap-2 items-center">
+                          <span className="font-medium truncate">{item.name}</span>
+                          <span className="text-sm text-gray-500 text-center">{new Date(item.createdAt).toLocaleTimeString()}</span>
+                          <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
+                          <Button
+                            onClick={() => {
+                              setSelectedUserId(item.id);
+                            }}
+                            variant="outline"
+                            size="icon"
+                            className="ml-auto h-6 w-6"
+                          >
+                            +
+                          </Button>
+                        </div>
+                        {item.observation && (
+                          <div className="text-sm text-gray-500 mt-1 text-center">
+                            {item.observation}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
-            )}
-
-            <div className="flex-grow overflow-y-auto pr-2">
-              {sortedQueue.length === 0 ? (
-                <p className="text-center text-gray-500">No one in queue yet</p>
-              ) : (
-                <ul className="space-y-2">
-                  {sortedQueue.map((item, index) => (
-                    <li key={index} className="border-b py-2">
-                      <div className="grid grid-cols-4 gap-2 items-center">
-                        <span className="font-medium truncate">{item.name}</span>
-                        <span className="text-sm text-gray-500 text-center">{new Date(item.createdAt).toLocaleTimeString()}</span>
-                        <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
-                        <Button
-                          onClick={() => {
-                            setSelectedUserId(item.id);
-                          }}
-                          variant="outline"
-                          size="icon"
-                          className="ml-auto h-6 w-6"
-                        >
-                          +
-                        </Button>
-                      </div>
-                      {item.observation && (
-                        <div className="text-sm text-gray-500 mt-1 text-center">
-                          {item.observation}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
       <Footer />
     </div>
