@@ -10,6 +10,7 @@ import { getQueueData, addUserToQueue, listenToQueueUpdates, updateUserSats } fr
 import { LightningAddress } from "@getalby/lightning-tools";
 import { QRCodeSVG } from 'qrcode.react';
 import { getNostrName, sendNostrPrivateMessage } from '../lib/nostr';
+import Footer from '@/components/ui/Footer';
 
 // Update the QueueItem type to match the structure from Firebase
 type QueueItem = {
@@ -282,8 +283,8 @@ export default function Queue() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-8 px-4">      
-      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-8">
+    <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center">      
+      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-8 flex-grow p-6">
         <div className="w-full md:w-1/2 space-y-8">
           {!userJoined ? (
             <Card className="shadow-lg transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
@@ -410,6 +411,7 @@ export default function Queue() {
           </Card>
         </div>
       )}
+      <Footer />
     </div>
   )
 }

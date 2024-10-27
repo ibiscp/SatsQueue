@@ -8,6 +8,8 @@ import { useQueue } from '../context/QueueContext'
 import { app, analytics, createQueue, checkQueueExists } from '../lib/firebase'
 import { LightningAddress } from "@getalby/lightning-tools";
 import { Check, X } from 'lucide-react'
+import Footer from '../components/ui/Footer'
+
 
 export default function Home() {
   const [queueName, setQueueName] = useState('')
@@ -75,9 +77,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center px-4">
-      <div className="flex-grow flex items-center justify-center w-full">
-        <Card className="w-full -mt-36 max-w-md shadow-lg bg-white bg-opacity-90 transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md">
+    <div className="min-h-[calc(100vh-8rem)] flex flex-col">
+      <div className="flex items-center justify-center px-4 py-8 flex-grow">
+        <Card className="w-full max-w-md shadow-lg bg-white bg-opacity-90 transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md">
           <CardHeader>
             <CardTitle className="text-2xl">Create a Queue</CardTitle>
             <CardDescription>Enter queue details to get started</CardDescription>
@@ -141,6 +143,7 @@ export default function Home() {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   )
 }

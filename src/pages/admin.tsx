@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useParams } from 'react-router-dom';
 import { getQueueData, removeUserFromQueue, listenToQueueUpdates } from '@/lib/firebase';
 import { sendNostrPrivateMessage } from '@/lib/nostr';
+import Footer from '@/components/ui/Footer';
 
 type QueueItem = {
   name: string;
@@ -83,8 +84,8 @@ export default function Admin() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-8 px-4">
-      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-8">
+    <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center">
+      <div className="flex w-full max-w-6xl flex-col md:flex-row gap-8 flex-grow p-6">
         <Card className="w-full md:w-1/3 shadow-lg flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Scan to Enter the Queue</CardTitle>
@@ -140,23 +141,25 @@ export default function Admin() {
             <CardTitle className="text-2xl">Recently Called</CardTitle>
           </CardHeader>
           <CardContent className="flex-grow overflow-hidden">
-            <div className="h-[calc(100vh-24rem)] overflow-y-auto pr-2">
-              {removedItems.length === 0 ? (
-                <p className="text-center text-gray-500">No one called yet</p>
-              ) : (
-                <ul className="space-y-4">
-                  {removedItems.map((item, index) => (
-                    <li key={index} className={`border-b py-2 ${index === 0 ? 'bg-gray-100 p-2 rounded' : ''}`}>
-                      {index === 0 ? (
-                        <>
-                          <div className="text-3xl font-bold mb-2 text-center">{item.name}</div>
-                          <div className="text-sm text-gray-500 text-center">
-                            <span>{item.sats} sats</span>
-                            <span className="mx-2">•</span>
-                            <span>Waited: {Math.floor((item.servedAt - item.createdAt) / 60000)} minutes</span>
-                          </div>
-                        </>
-                      ) : (
+            {removedItems.length === 0 ? (
+              <p className="text-center text-gray-500">No one called yet</p>
+            ) : (
+              <>
+                {/* Current person called shown outside scroll area */}
+                <div className="mb-4">
+                  <div className="text-3xl font-bold mb-2 text-center">{removedItems[0].name}</div>
+                  <div className="text-sm text-gray-500 text-center">
+                    <span>{removedItems[0].sats} sats</span>
+                    <span className="mx-2">•</span>
+                    <span>Waited: {Math.floor((removedItems[0].servedAt - removedItems[0].createdAt) / 60000)} minutes</span>
+                  </div>
+                </div>
+
+                {/* Scrollable list of previously called people */}
+                <div className="h-[calc(100vh-24rem)] overflow-y-auto pr-2">
+                  <ul className="space-y-4">
+                    {removedItems.slice(1).map((item, index) => (
+                      <li key={index} className="border-b py-2">
                         <div className="grid grid-cols-3 gap-2 items-center">
                           <span className="truncate">{item.name}</span>
                           <span className="text-sm text-gray-500 text-center">
@@ -164,15 +167,16 @@ export default function Admin() {
                           </span>
                           <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
                         </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   )
 }
