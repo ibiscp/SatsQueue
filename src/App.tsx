@@ -3,7 +3,7 @@ import Home from './pages/main'
 import Queue from './pages/queue'
 import Admin from './pages/admin'
 import { QueueProvider } from './context/QueueContext'
-import Title from './components/ui/Title'
+import Title from './components/ui/title'
 
 function App() {
   return (

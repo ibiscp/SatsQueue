@@ -1,4 +1,4 @@
-import { SimplePool, getPublicKey, nip19, finalizeEvent, Event, nip04 } from 'nostr-tools'
+import { SimplePool, nip19, finalizeEvent, nip04 } from 'nostr-tools'
 
 const nostrConfig = {
   relays: import.meta.env.VITE_NOSTR_RELAYS?.split(',') || ['wss://relay.damus.io', 'wss://relay.nostr.band'],
@@ -71,7 +71,7 @@ export const sendNostrPrivateMessage = async (recipientPubkey: string, content: 
     if (!nostrConfig.privateKey) {
       throw new Error('Private key is not set')
     }
-    const { data: sk } = nip19.decode(nostrConfig.privateKey)
+    const { data: sk } = nip19.decode(nostrConfig.privateKey) as { data: Uint8Array }; // Ensure sk is a string
 
     const encryptedContent = await nip04.encrypt(sk, recipientPubkey, content)
 
@@ -86,7 +86,7 @@ export const sendNostrPrivateMessage = async (recipientPubkey: string, content: 
 
     try {
       const pub = pool.publish(nostrConfig.relays, signedEvent)
-      await Promise.any(pub)
+      await Promise.all(pub.map(p => p.catch(() => undefined)))
       console.log('Private message sent successfully')
     } catch (error) {
       console.error('Error sending Nostr private message:', error)

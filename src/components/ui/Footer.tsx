@@ -24,7 +24,7 @@ const Footer: React.FC = () => {
           rel="noopener noreferrer"
           className="text-lg font-semibold transition-colors duration-200 hover:text-gray-300"
         >
-          View on GitHub
+          GitHub
         </a>
       </div>
     </footer>

@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getDatabase, ref, set, get, remove, onValue, update, increment } from "firebase/database";
+import { getDatabase, ref, set, get, remove, onValue, update, increment, push, serverTimestamp } from "firebase/database";
 import { getAuth } from "firebase/auth";
 import { nanoid } from 'nanoid';
 
@@ -65,31 +65,49 @@ export const checkQueueExists = async (queueName: string): Promise<boolean> => {
 // Function to generate mocked users
 const generateMockedUsers = (count: number) => {
   const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eva', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack'];
+  const observations = [
+    'How do you handle stress during live streams?',
+    'Whats your favorite video game to stream?',
+    'Tips for growing a streaming community?',
+    'How long have you been streaming?',
+    'Best equipment for starting streamers?',
+    'How do you balance streaming and life?',
+    'Favorite streaming moment so far?',
+    'Advice for new content creators?',
+    'How do you deal with trolls?',
+    'Plans for future content?'
+  ];
   return Array.from({length: count}, (_, i) => ({
     id: nanoid(),
     name: names[i],
     createdAt: Date.now() - Math.random() * 3600000, // Random join time within the last hour
     sats: Math.floor(Math.random() * 200) + 50, // Random sats between 50 and 250
-    nostrPubkey: null
+    nostrPubkey: null,
+    observation: observations[i]
   }));
 };
 
 // Function to add a user to a queue
-export const addUserToQueue = async (queueName: string, userName: string, nostrPubkey: string | null, sats: number) => {
-  const normalizedQueueName = queueName.toLowerCase();
-  const userId = nanoid();
-  await set(ref(db, `queues/${normalizedQueueName}/currentQueue/${userId}`), {
-    id: userId,
-    name: userName,
-    createdAt: Date.now(),
-    nostrPubkey: nostrPubkey,
-    sats: sats
+export const addUserToQueue = async (
+  queueId: string, 
+  name: string, 
+  nostrPubkey: string | undefined, 
+  sats: number,
+  observation?: string // Add observation parameter
+) => {
+  const queueRef = ref(db, `queues/${queueId}/currentQueue`);
+  const newUserRef = push(queueRef);
+  
+  await set(newUserRef, {
+    name,
+    id: newUserRef.key,
+    createdAt: serverTimestamp(),
+    sats,
+    nostrPubkey,
+    observation // Add observation to the data
   });
-  // Update total sats
-  const totalSatsRef = ref(db, `queues/${normalizedQueueName}/totalSats`);
-  const currentTotal = (await get(totalSatsRef)).val() || 0;
-  await set(totalSatsRef, currentTotal + sats);
-  return userId;
+
+  return newUserRef.key;
 };
 
 // Function to remove a user from the queue (when served)

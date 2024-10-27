@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useQueue } from '@/context/QueueContext';
 import { Button } from '@/components/ui/button';
 import { useParams } from 'react-router-dom';
 import { getQueueData, removeUserFromQueue, listenToQueueUpdates } from '@/lib/firebase';
 import { sendNostrPrivateMessage } from '@/lib/nostr';
-import Footer from '@/components/ui/Footer';
+import Footer from '@/components/ui/footer';
+import { QrCode } from 'lucide-react';
 
 type QueueItem = {
   name: string;
@@ -14,6 +15,7 @@ type QueueItem = {
   createdAt: number;
   sats: number;
   nostrPubkey?: string;
+  observation?: string;
 }
 
 type RemovedItem = QueueItem & {
@@ -27,6 +29,7 @@ export default function Admin() {
   const { getQueueName } = useQueue()
   const [queueName, setQueueName] = useState<string | null>(null)
   const [removedItems, setRemovedItems] = useState<RemovedItem[]>([])
+  const [showQRModal, setShowQRModal] = useState(false)
 
   useEffect(() => {
     const fetchQueueData = async () => {
@@ -82,99 +85,126 @@ export default function Admin() {
       }
     }
   };
-
   return (
     <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center">
-      <div className="flex w-full max-w-6xl flex-col md:flex-row gap-8 flex-grow p-6">
-        <Card className="w-full md:w-1/3 shadow-lg flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Scan to Enter the Queue</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col justify-center items-center flex-grow">
-            <QRCodeSVG value={qrValue} size={250} />
-            <div className="mt-4 text-center">
-              <a
-                href={qrValue}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200"
-              >
-                {qrValue}
-              </a>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="w-full md:w-1/3 shadow-lg flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Current Queue</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-grow overflow-hidden">
-            <div className="h-[calc(100vh-24rem)] overflow-y-auto pr-2">
-              {sortedQueue.length === 0 ? (
-                <p className="text-center text-gray-500">No one in queue yet</p>
-              ) : (
-                <ul className="space-y-2">
-                  {sortedQueue.map((item, index) => (
-                    <li key={index} className="grid grid-cols-3 gap-2 items-center border-b py-2">
-                      <span className="font-medium truncate">{item.name}</span>
-                      <span className="text-sm text-gray-500 text-center">{new Date(item.createdAt).toLocaleTimeString()}</span>
-                      <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </CardContent>
-          <div className="p-4 border-t">
-            <Button
-              className="w-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200 ease-in-out focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none"
-              onClick={handleCallNext}
+      <div className="w-full max-w-6xl p-6 flex-grow">
+        <div className="flex justify-center items-center mb-8 relative">
+          <div className="flex items-center gap-4">
+            <a
+              href={qrValue}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xl font-medium text-gray-800 hover:bg-gray-200 transition-colors duration-200 bg-gray-100 rounded-lg px-6 py-3"
             >
-              Call next
+              {qrValue}
+            </a>
+            <Button
+              onClick={() => setShowQRModal(true)}
+              variant="outline"
+              className="flex items-center gap-2 h-[48px]"
+            >
+              <QrCode className="h-5 w-5" />
             </Button>
           </div>
-        </Card>
+        </div>
 
-        <Card className="w-full md:w-1/3 shadow-lg flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Recently Called</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-grow overflow-hidden">
-            {removedItems.length === 0 ? (
-              <p className="text-center text-gray-500">No one called yet</p>
-            ) : (
-              <>
-                {/* Current person called shown outside scroll area */}
-                <div className="mb-4">
-                  <div className="text-3xl font-bold mb-2 text-center">{removedItems[0].name}</div>
-                  <div className="text-sm text-gray-500 text-center">
-                    <span>{removedItems[0].sats} sats</span>
-                    <span className="mx-2">•</span>
-                    <span>Waited: {Math.floor((removedItems[0].servedAt - removedItems[0].createdAt) / 60000)} minutes</span>
-                  </div>
-                </div>
+        {showQRModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowQRModal(false)}>
+            <div className="bg-white p-8 rounded-lg" onClick={e => e.stopPropagation()}>
+              <QRCodeSVG value={qrValue} size={400} />
+            </div>
+          </div>
+        )}
 
-                {/* Scrollable list of previously called people */}
-                <div className="h-[calc(100vh-24rem)] overflow-y-auto pr-2">
-                  <ul className="space-y-4">
-                    {removedItems.slice(1).map((item, index) => (
+        <div className="flex flex-col md:flex-row gap-8 h-[calc(100vh-16rem)]">
+          <Card className="w-full md:w-1/2 shadow-lg flex flex-col">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Current Queue</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow overflow-hidden">
+              <div className="h-full overflow-y-auto pr-2">
+                {sortedQueue.length === 0 ? (
+                  <p className="text-center text-gray-500">No one in queue yet</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {sortedQueue.map((item, index) => (
                       <li key={index} className="border-b py-2">
                         <div className="grid grid-cols-3 gap-2 items-center">
-                          <span className="truncate">{item.name}</span>
-                          <span className="text-sm text-gray-500 text-center">
-                            {Math.floor((item.servedAt - item.createdAt) / 60000)} min
-                          </span>
+                          <span className="font-medium truncate">{item.name}</span>
+                          <span className="text-sm text-gray-500 text-center">{new Date(item.createdAt).toLocaleTimeString()}</span>
                           <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
                         </div>
+                        {item.observation && (
+                          <div className="text-sm text-gray-500 mt-1 text-center">
+                            {item.observation}
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </div>
+            </CardContent>
+            <div className="p-4 border-t mt-auto">
+              <Button
+                className="w-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200 ease-in-out focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none"
+                onClick={handleCallNext}
+              >
+                Call next
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="w-full md:w-1/2 shadow-lg flex flex-col">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Recently Called</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow overflow-hidden">
+              {removedItems.length === 0 ? (
+                <p className="text-center text-gray-500">No one called yet</p>
+              ) : (
+                <>
+                  {/* Current person called shown outside scroll area */}
+                  <div className="mb-4">
+                    <div className="text-3xl font-bold mb-2 text-center">{removedItems[0].name}</div>
+                    <div className="text-sm text-gray-500 text-center">
+                      <span>{removedItems[0].sats} sats</span>
+                      <span className="mx-2">•</span>
+                      <span>Waited: {Math.floor((removedItems[0].servedAt - removedItems[0].createdAt) / 60000)} minutes</span>
+                    </div>
+                    {removedItems[0].observation && (
+                      <div className="text-sm text-gray-500 mt-2 text-center italic">
+                        {removedItems[0].observation}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Scrollable list of previously called people */}
+                  <div className="h-[calc(100%-8rem)] overflow-y-auto pr-2">
+                    <ul className="space-y-4">
+                      {removedItems.slice(1).map((item, index) => (
+                        <li key={index} className="border-b py-2">
+                          <div className="grid grid-cols-3 gap-2 items-center">
+                            <span className="truncate">{item.name}</span>
+                            <span className="text-sm text-gray-500 text-center">
+                              {Math.floor((item.servedAt - item.createdAt) / 60000)} min
+                            </span>
+                            <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
+                          </div>
+                          {item.observation && (
+                            <div className="text-sm text-gray-500 mt-1 text-center">
+                              {item.observation}
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
       <Footer />
     </div>

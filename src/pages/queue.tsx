@@ -1,16 +1,16 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@radix-ui/react-label';
-import { useState, useEffect, useCallback } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { X } from 'lucide-react';
 import { getQueueData, addUserToQueue, listenToQueueUpdates, updateUserSats } from '@/lib/firebase';
 import { LightningAddress } from "@getalby/lightning-tools";
 import { QRCodeSVG } from 'qrcode.react';
 import { getNostrName, sendNostrPrivateMessage } from '../lib/nostr';
-import Footer from '@/components/ui/Footer';
+import Footer from '@/components/ui/footer';
 
 // Update the QueueItem type to match the structure from Firebase
 type QueueItem = {
@@ -19,6 +19,7 @@ type QueueItem = {
   createdAt: number;
   sats: number;
   nostrPubkey?: string;
+  observation?: string;
 }
 
 type RemovedItem = QueueItem & {
@@ -198,11 +199,36 @@ export default function Queue() {
   const [identifier, setIdentifier] = useState('')
   const [showLightningIntro, setShowLightningIntro] = useState(false);
   const [lnurl, setLnurl] = useState('');
-  const [userId, setUserId] = useState(null);
-  const [userJoined, setUserJoined] = useState(false);
-  const [userSats, setUserSats] = useState(0);
-  const [userName, setUserName] = useState('');
-  const [userPubkey, setUserPubkey] = useState('');
+  const [userId, setUserId] = useState(() => {
+    // Initialize from localStorage
+    return localStorage.getItem(`${queueId}_userId`) || null;
+  });
+  const [userJoined, setUserJoined] = useState(() => {
+    // Initialize from localStorage
+    return localStorage.getItem(`${queueId}_userJoined`) === 'true';
+  });
+  const [userSats, setUserSats] = useState(() => {
+    // Initialize from localStorage
+    return Number(localStorage.getItem(`${queueId}_userSats`)) || 0;
+  });
+  const [userName, setUserName] = useState(() => {
+    // Initialize from localStorage
+    return localStorage.getItem(`${queueId}_userName`) || '';
+  });
+  const [userPubkey, setUserPubkey] = useState(() => {
+    // Initialize from localStorage
+    return localStorage.getItem(`${queueId}_userPubkey`) || '';
+  });
+  const [observation, setObservation] = useState(''); // Add this line
+
+  // Add useEffect to save state changes to localStorage
+  useEffect(() => {
+    if (userId) localStorage.setItem(`${queueId}_userId`, userId);
+    localStorage.setItem(`${queueId}_userJoined`, String(userJoined));
+    localStorage.setItem(`${queueId}_userSats`, String(userSats));
+    if (userName) localStorage.setItem(`${queueId}_userName`, userName);
+    if (userPubkey) localStorage.setItem(`${queueId}_userPubkey`, userPubkey);
+  }, [queueId, userId, userJoined, userSats, userName, userPubkey]);
 
   useEffect(() => {
     const fetchQueueData = async () => {
@@ -226,6 +252,25 @@ export default function Queue() {
     return () => unsubscribe();
   }, [queueId]);
 
+  // Add effect to fetch nostr name when identifier changes
+  useEffect(() => {
+    const fetchNostrName = async () => {
+      if (identifier.startsWith('npub')) {
+        try {
+          const { name, pubkey } = await getNostrName(identifier);
+          if (name) {
+            setUserName(name);
+            setUserPubkey(pubkey);
+          }
+        } catch (error) {
+          console.error("Error fetching nostr name:", error);
+        }
+      }
+    };
+
+    fetchNostrName();
+  }, [identifier]);
+
   const updateQueueState = (queueData: any) => {
     setQueue(Object.values(queueData.currentQueue || {}));
     const sortedRemovedItems = Object.values(queueData.servedCustomers || {}) as RemovedItem[];
@@ -237,15 +282,17 @@ export default function Queue() {
     e.preventDefault()
     if (identifier.trim() && queueId) {
       try {
-        let npub = identifier.trim();
-        let { name, pubkey } = await getNostrName(npub);
+        let name = userName || identifier.trim();
+        let pubkey = userPubkey;
 
-        if (!name) {
-          name = npub;
-          npub = null;
+        if (!userName && identifier.startsWith('npub')) {
+          const nostrData = await getNostrName(identifier);
+          name = nostrData.name || identifier;
+          pubkey = nostrData.pubkey;
         }
 
-        const newUserId = await addUserToQueue(queueId, name, pubkey, 0);
+        // Update addUserToQueue call to include observation
+        const newUserId = await addUserToQueue(queueId, name, pubkey, 0, observation);
         setUserId(newUserId);
         setUserJoined(true);
         setUserName(name);
@@ -261,7 +308,6 @@ export default function Queue() {
         alert("Failed to join the queue. Please try again.");
       }
     }
-
   }
 
   const handlePaymentSuccess = (amount: number) => {
@@ -282,19 +328,33 @@ export default function Queue() {
     return a.createdAt - b.createdAt;
   });
 
+  // // Add this function to the Queue component
+  // const clearUserState = () => {
+  //   localStorage.removeItem(`${queueId}_userId`);
+  //   localStorage.removeItem(`${queueId}_userJoined`);
+  //   localStorage.removeItem(`${queueId}_userSats`);
+  //   localStorage.removeItem(`${queueId}_userName`);
+  //   localStorage.removeItem(`${queueId}_userPubkey`);
+  //   setUserId(null);
+  //   setUserJoined(false);
+  //   setUserSats(0);
+  //   setUserName('');
+  //   setUserPubkey('');
+  // };
+
   return (
     <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center">      
       <div className="w-full max-w-6xl flex flex-col md:flex-row gap-8 flex-grow p-6">
         <div className="w-full md:w-1/2 space-y-8">
           {!userJoined ? (
-            <Card className="shadow-lg transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
+            <Card className="shadow-lg p-4">
               <CardHeader>
                 <CardTitle className="text-2xl">Join the Queue</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={joinQueue} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="identifier" className="text-lg">Your Name or Nostr npub</Label>
+                    <Label htmlFor="identifier" className="text-lg">Your Name, Nostr npub, nprofile or Nostr NIP-05</Label>
                     <Input
                       id="identifier"
                       value={identifier}
@@ -303,17 +363,32 @@ export default function Queue() {
                       required
                       className="text-lg py-2 transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:outline-none"
                     />
+                    {userName && identifier.startsWith('npub') && (
+                      <p className="text-sm text-gray-600">Nostr name: {userName}</p>
+                    )}
                   </div>
-                  <Button type="submit" className="w-full text-lg py-2 transition-all duration-200 ease-in-out hover:bg-opacity-90 active:bg-opacity-100 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:outline-none">Enter Queue</Button>
+                  <div className="space-y-2">
+                    <Label htmlFor="observation" className="text-lg">Observation</Label>
+                    <Input
+                      id="observation"
+                      value={observation}
+                      onChange={(e) => setObservation(e.target.value)}
+                      placeholder="Add any notes or observations"
+                      className="text-lg py-2 transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:outline-none"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full text-lg py-2 transition-all duration-200 ease-in-out hover:bg-opacity-90 active:bg-opacity-100 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:outline-none">
+                    Enter Queue
+                  </Button>
                 </form>
               </CardContent>
             </Card>
           ) : (
             <>
-              <Card className="shadow-lg mb-4 transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
+              <Card className="shadow-lg mb-4 p-4">
                 <CardContent className="pt-6">
-                  <p className="text-xl font-semibold">Welcome, {userName}!</p>
-                  <p>Your current sats: {userSats}</p>
+                  <p className="text-3xl font-bold mb-2">Welcome, {userName}!</p>
+                  <p>Your current position: {userSats} sats ({sortedQueue.findIndex(item => item.id === userId) + 1} of {sortedQueue.length})</p>
                 </CardContent>
               </Card>
               <LightningQRCode 
@@ -327,34 +402,46 @@ export default function Queue() {
           )}
         </div>
 
-        <Card className="w-full md:w-1/2 shadow-lg flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 active:scale-100 active:shadow-md p-4">
+        <Card className="w-full md:w-1/2 shadow-lg flex flex-col p-4">
           <CardHeader>
             <CardTitle className="text-2xl">Queue Status</CardTitle>
           </CardHeader>
           <CardContent className="flex-grow overflow-hidden">
-            <div className="h-[calc(100vh-24rem)] overflow-y-auto pr-2">
-              {removedItems.length > 0 && (
-                <div className="mb-4 p-2 bg-gray-100 rounded">
-                  <h3 className="font-bold text-lg mb-2">Last Called</h3>
-                  <div className="text-3xl font-bold mb-2 text-center">{removedItems[0].name}</div>
-                  <div className="text-sm text-gray-500 text-center">
-                    <span>{removedItems[0].sats} sats</span>
-                    <span className="mx-2">•</span>
-                    <span>Waited: {Math.floor((removedItems[0].servedAt - removedItems[0].createdAt) / 60000)} minutes</span>
-                  </div>
+            {/* Last called section - fixed outside scroll area */}
+            {removedItems.length > 0 && (
+              <div className="mb-4 p-2 bg-gray-100 rounded">
+                <div className="text-3xl font-bold mb-2 text-center">{removedItems[0].name}</div>
+                <div className="text-sm text-gray-500 text-center">
+                  <span>{removedItems[0].sats} sats</span>
+                  <span className="mx-2">•</span>
+                  <span>Waited: {Math.floor((removedItems[0].servedAt - removedItems[0].createdAt) / 60000)} minutes</span>
                 </div>
-              )}
-              
-              <h3 className="font-bold text-lg mb-2">Current Queue</h3>
+                {removedItems[0].observation && (
+                  <div className="text-sm text-gray-500 mt-2 text-center italic">
+                    {removedItems[0].observation}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Scrollable queue section */}
+            <div className="max-h-[calc(100vh-32rem)] overflow-y-auto pr-2">
               {sortedQueue.length === 0 ? (
                 <p className="text-center text-gray-500">No one in queue yet</p>
               ) : (
                 <ul className="space-y-2">
                   {sortedQueue.map((item, index) => (
-                    <li key={index} className="grid grid-cols-3 gap-2 items-center border-b py-2">
-                      <span className="font-medium truncate">{item.name}</span>
-                      <span className="text-sm text-gray-500 text-center">{new Date(item.createdAt).toLocaleTimeString()}</span>
-                      <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
+                    <li key={index} className="border-b py-2">
+                      <div className="grid grid-cols-3 gap-2 items-center">
+                        <span className="font-medium truncate">{item.name}</span>
+                        <span className="text-sm text-gray-500 text-center">{new Date(item.createdAt).toLocaleTimeString()}</span>
+                        <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
+                      </div>
+                      {item.observation && (
+                        <div className="text-sm text-gray-500 mt-1 text-center">
+                          {item.observation}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>

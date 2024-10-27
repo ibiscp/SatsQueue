@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { useQueue } from '../context/QueueContext'
 import { app, analytics, createQueue, checkQueueExists } from '../lib/firebase'
 import { LightningAddress } from "@getalby/lightning-tools";
-import { Check, X } from 'lucide-react'
-import Footer from '../components/ui/Footer'
+import { Check, X } from 'lucide-react';
+import Footer from '@/components/ui/footer';
 
 
 export default function Home() {
