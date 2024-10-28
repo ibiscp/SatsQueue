@@ -19,7 +19,7 @@ type QueueItem = {
   createdAt: number;
   sats: number;
   nostrPubkey?: string;
-  observation?: string;
+  comment?: string;
 }
 
 type RemovedItem = QueueItem & {
@@ -41,7 +41,7 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
     const fetchQueueItem = async () => {
       const queueData = await getQueueData(queueId);
       if (queueData && queueData.currentQueue) {
-        const item = Object.values(queueData.currentQueue).find(item => item.id === userId);
+        const item = Object.values(queueData.currentQueue).find((item: QueueItem) => item.id === userId);
         setQueueItem(item);
       }
     };
@@ -57,12 +57,12 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
     setIsInitialized(true);
   }, [userId]);
 
-  // Only generate initial invoice after component is initialized
+  // Generate initial invoice after component is initialized or userId changes
   useEffect(() => {
-    if (isInitialized && lnurl) {
+    if (isInitialized && lnurl && userId) {
       handleGenerateInvoice(10);
     }
-  }, [isInitialized, lnurl]);
+  }, [isInitialized, lnurl, userId]);
 
   const handleGenerateInvoice = useCallback(async (satAmount = amount) => {
     console.log('Generating invoice for amount:', satAmount);
@@ -258,7 +258,7 @@ export default function Queue() {
   const [userPubkey, setUserPubkey] = useState(() => {
     return localStorage.getItem(`${queueId}_userPubkey`) || '';
   });
-  const [observation, setObservation] = useState('');
+  const [comment, setComment] = useState('');
   const [isCheckingName, setIsCheckingName] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
@@ -340,7 +340,7 @@ export default function Queue() {
           pubkey = nostrData.pubkey;
         }
 
-        const newUserId = await addUserToQueue(queueId, name, pubkey, 0, observation);
+        const newUserId = await addUserToQueue(queueId, name, pubkey, 0, comment);
         setUserId(newUserId);
         setUserJoined(true);
         setUserName(name);
@@ -384,7 +384,7 @@ export default function Queue() {
     setUserName('');
     setUserPubkey('');
     setIdentifier('');
-    setObservation('');
+    setComment('');
   };
   return (
     <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center">      
@@ -420,12 +420,12 @@ export default function Queue() {
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="observation" className="text-lg">Observation</Label>
+                      <Label htmlFor="comment" className="text-lg">Comment</Label>
                       <Input
-                        id="observation"
-                        value={observation}
-                        onChange={(e) => setObservation(e.target.value)}
-                        placeholder="Add any notes or observations"
+                        id="comment"
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        placeholder="Add any notes or comments"
                         className="text-lg py-2 transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:outline-none"
                       />
                     </div>
@@ -472,28 +472,27 @@ export default function Queue() {
         </div>
 
         <div className="w-full md:w-1/2 flex flex-col h-[calc(100vh-12rem)]">
-          <Card className="shadow-lg flex-grow">
-            <CardHeader>
+          <Card className="shadow-lg flex-grow overflow-hidden flex flex-col">
+            <CardHeader className="flex-shrink-0">
               <CardTitle className="text-2xl">Queue Status</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow overflow-hidden flex flex-col">
               {removedItems.length > 0 && (
-                <div className="mb-4 p-2 bg-gray-100 rounded">
+                <div className="p-2 bg-gray-100 rounded">
                   <div className="text-3xl font-bold mb-2 text-center">{removedItems[0].name}</div>
                   <div className="text-sm text-gray-500 text-center">
                     <span>{removedItems[0].sats} sats</span>
                     <span className="mx-2">•</span>
                     <span>Waited: {Math.floor((removedItems[0].servedAt - removedItems[0].createdAt) / 60000)} minutes</span>
                   </div>
-                  {removedItems[0].observation && (
+                  {removedItems[0].comment && (
                     <div className="text-sm text-gray-500 mt-2 text-center italic">
-                      {removedItems[0].observation}
+                      {removedItems[0].comment}
                     </div>
                   )}
                 </div>
               )}
-
-              <div className="flex-grow overflow-y-auto pr-2">
+            </CardHeader>
+            <CardContent className="flex-grow overflow-y-auto">
+              <div className="space-y-2">
                 {sortedQueue.length === 0 ? (
                   <p className="text-center text-gray-500">No one in queue yet</p>
                 ) : (
@@ -515,9 +514,9 @@ export default function Queue() {
                             +
                           </Button>
                         </div>
-                        {item.observation && (
+                        {item.comment && (
                           <div className="text-sm text-gray-500 mt-1 text-center">
-                            {item.observation}
+                            {item.comment}
                           </div>
                         )}
                       </li>

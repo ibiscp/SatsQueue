@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getDatabase, ref, set, get, remove, onValue, update, increment, push } from "firebase/database";
+import { getDatabase, ref, set, get, remove, onValue, update, increment } from "firebase/database";
 import { getAuth } from "firebase/auth";
 import { nanoid } from 'nanoid';
 
@@ -65,7 +65,7 @@ export const checkQueueExists = async (queueName: string): Promise<boolean> => {
 // Function to generate mocked users
 const generateMockedUsers = (count: number) => {
   const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eva', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack'];
-  const observations = [
+  const comments = [
     'How do you handle stress during live streams?',
     'Whats your favorite video game to stream?',
     'Tips for growing a streaming community?',
@@ -83,7 +83,7 @@ const generateMockedUsers = (count: number) => {
     createdAt: Date.now() - Math.random() * 3600000, // Random join time within the last hour
     sats: Math.floor(Math.random() * 200) + 50, // Random sats between 50 and 250
     nostrPubkey: null,
-    observation: observations[i]
+    comment: comments[i]
   }));
 };
 
@@ -93,7 +93,7 @@ export const addUserToQueue = async (
   userName: string, 
   nostrPubkey: string | null, 
   sats: number,
-  observation?: string
+  comment?: string
 ) => {
   const normalizedQueueName = queueName.toLowerCase();
   const userId = nanoid();
@@ -103,7 +103,7 @@ export const addUserToQueue = async (
     createdAt: Date.now(),
     nostrPubkey: nostrPubkey,
     sats: sats,
-    observation: observation
+    comment: comment
   });
   // Update total sats
   const totalSatsRef = ref(db, `queues/${normalizedQueueName}/totalSats`);

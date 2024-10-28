@@ -15,7 +15,7 @@ type QueueItem = {
   createdAt: number;
   sats: number;
   nostrPubkey?: string;
-  observation?: string;
+  comment?: string;
 }
 
 type RemovedItem = QueueItem & {
@@ -166,9 +166,9 @@ export default function Admin() {
                             </Button>
                           </div>
                         </div>
-                        {item.observation && (
+                        {item.comment && (
                           <div className="text-sm text-gray-500 mt-1 text-center">
-                            {item.observation}
+                            {item.comment}
                           </div>
                         )}
                       </li>
@@ -196,9 +196,9 @@ export default function Admin() {
                       <span className="mx-2">•</span>
                       <span>Waited: {Math.floor((removedItems[0].servedAt - removedItems[0].createdAt) / 60000)} minutes</span>
                     </div>
-                    {removedItems[0].observation && (
+                    {removedItems[0].comment && (
                       <div className="text-sm text-gray-500 mt-2 text-center italic">
-                        {removedItems[0].observation}
+                        {removedItems[0].comment}
                       </div>
                     )}
                   </div>
@@ -215,9 +215,9 @@ export default function Admin() {
                             </span>
                             <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
                           </div>
-                          {item.observation && (
+                          {item.comment && (
                             <div className="text-sm text-gray-500 mt-1 text-center">
-                              {item.observation}
+                              {item.comment}
                             </div>
                           )}
                         </li>

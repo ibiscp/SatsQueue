@@ -71,7 +71,7 @@ export const sendNostrPrivateMessage = async (recipientPubkey: string, content: 
     if (!nostrConfig.privateKey) {
       throw new Error('Private key is not set')
     }
-    const { data: sk } = nip19.decode(nostrConfig.privateKey) as { data: Uint8Array }; // Ensure sk is a string
+    const { data: sk } = nip19.decode(nostrConfig.privateKey) as { data: Uint8Array };
 
     const encryptedContent = await nip04.encrypt(sk, recipientPubkey, content)
 
