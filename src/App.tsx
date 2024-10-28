@@ -16,8 +16,12 @@ function App() {
           <div className="flex-grow">
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/:name" element={<Queue />} />
-              <Route path="/queue/:uuid" element={<Admin />} />
+              <Route path="/:name" element={
+                <Queue />
+              } />
+              <Route path="/queue/:uuid" element={
+                <Admin />
+              } />
             </Routes>
           </div>
         </div>

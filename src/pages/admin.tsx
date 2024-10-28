@@ -36,7 +36,7 @@ export default function Admin() {
       if (uuid) {
         const name = getQueueName(uuid)
         setQueueName(name)
-        setQrValue(`${window.location.origin}/${name || uuid}`)
+        setQrValue(`${window.location.origin}/${name?.toLowerCase() || uuid}`); // Ensure lowercase in QR code
         
         const queueData = await getQueueData(uuid);
         if (queueData) {
