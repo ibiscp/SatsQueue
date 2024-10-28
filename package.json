@@ -14,6 +14,8 @@
     "@getalby/lightning-tools": "^5.1.0",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-slot": "^1.1.0",
+    "bech32": "^2.0.0",
+    "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "firebase": "^10.14.1",
@@ -26,10 +28,6 @@
     "react-router-dom": "^6.22.3",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
-    "three": "^0.169.0",
-    "vanta": "^0.5.24",
-    "webln": "^0.3.2",
-    "websocket-polyfill": "^1.0.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {

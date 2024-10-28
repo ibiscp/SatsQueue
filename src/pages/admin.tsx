@@ -137,16 +137,16 @@ export default function Admin() {
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Current Queue</CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow overflow-hidden">
-              <div className="p-4 mt-auto">
+            <CardContent className="flex-grow overflow-hidden flex flex-col">
+              <div className="p-4">
                 <Button
                   className="w-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200 ease-in-out focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none"
                   onClick={handleCallNext}
                 >
-                Call next
-              </Button>
-            </div>
-              <div className="h-full overflow-y-auto pr-2">
+                  Call next
+                </Button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-4">
                 {sortedQueue.length === 0 ? (
                   <p className="text-center text-gray-500">No one in queue yet</p>
                 ) : (

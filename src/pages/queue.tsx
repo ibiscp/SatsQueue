@@ -11,6 +11,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { getNostrName, sendNostrPrivateMessage } from '../lib/nostr';
 import Footer from '@/components/ui/footer';
 import { generateInvoice } from '@/lib/lightning';
+import confetti from 'canvas-confetti';
 
 // Update the QueueItem type to match the structure from Firebase
 type QueueItem = {
@@ -101,6 +102,28 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
             onPaymentSuccess(amount);
             clearInterval(intervalId);
 
+            // Trigger firework confetti animation
+            var duration = 5 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 10, spread: 500, ticks: 60, zIndex: 5 };
+
+            function randomInRange(min, max) {
+              return Math.random() * (max - min) + min;
+            }
+
+            var interval = setInterval(function() {
+              var timeLeft = animationEnd - Date.now();
+
+              if (timeLeft <= 0) {
+                return clearInterval(interval);
+              }
+
+              var particleCount = 200 * (timeLeft / duration);
+              // since particles fall down, start a bit higher than random
+              // confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+              confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.9), y: Math.random() - 0.2 } });
+            }, 100);
+
             // Send Nostr messages
             const myUserId = localStorage.getItem(`${queueId}_userId`);
             const isTopUpForOther = userId !== myUserId;
@@ -164,7 +187,7 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
       {isPaid ? (
         <>
           <Alert>
-            <AlertDescription>
+            <AlertDescription className="text-center">
               ⚡️ Congratulations, you have topped up {userId === localStorage.getItem(`${queueId}_userId`) ? 'your' : `${queueItem?.name}'s`} queue position with {amount} sats! 🎉
             </AlertDescription>
           </Alert>
