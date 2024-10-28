@@ -104,8 +104,8 @@ export default function Home() {
     if (queueName.trim() && isValidUrl && isValidQueueName && isQueueNameAvailable) {
       try {
         const normalizedQueueName = queueName.toLowerCase(); // Convert to lowercase
-        const queueId = await createQueue(normalizedQueueName, walletAddress);
-        setQueueNameContext(normalizedQueueName, queueId);
+        const queueId = await createQueue(queueName, walletAddress);
+        setQueueNameContext(queueName, queueId);
         navigate(`/queue/${normalizedQueueName}`);
       } catch (error) {
         console.error("Error creating queue:", error);

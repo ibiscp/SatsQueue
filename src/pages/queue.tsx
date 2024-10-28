@@ -35,15 +35,19 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
   const [isPaid, setIsPaid] = useState(false);
   const [queueItem, setQueueItem] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [queueName, setQueueName] = useState('');
 
   const predefinedAmounts = [10, 50, 100, 500, 1000];
 
   useEffect(() => {
     const fetchQueueItem = async () => {
       const queueData = await getQueueData(queueId);
-      if (queueData && queueData.currentQueue) {
-        const item = Object.values(queueData.currentQueue).find((item: QueueItem) => item.id === userId);
-        setQueueItem(item);
+      if (queueData) {
+        if (queueData.currentQueue) {
+          const item = Object.values(queueData.currentQueue).find((item: QueueItem) => item.id === userId);
+          setQueueItem(item);
+        }
+        setQueueName(queueData.name || queueId);
       }
     };
     fetchQueueItem();
@@ -131,7 +135,7 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
             if (isTopUpForOther && queueItem) {
               // Send message to person who topped up
               if (pubkey) {
-                const senderMessage = `⚡️ You just topped up ${queueItem.name}'s position with ${amount} sats in ${queueId}! 🎉`;
+                const senderMessage = `⚡️ You just topped up ${queueItem.name}'s position with ${amount} sats in ${queueName}!`;
                 try {
                   await sendNostrPrivateMessage(pubkey, senderMessage);
                   console.log('Nostr message sent to sender successfully');
@@ -142,7 +146,7 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
 
               // Send message to person who received the top-up
               if (queueItem.nostrPubkey) {
-                const recipientMessage = `⚡️ Someone just topped up your position with ${amount} sats in ${queueId}! 🎉`;
+                const recipientMessage = `⚡️ Someone just topped up your position with ${amount} sats in ${queueName}!`;
                 try {
                   await sendNostrPrivateMessage(queueItem.nostrPubkey, recipientMessage);
                   console.log('Nostr message sent to recipient successfully');
@@ -153,7 +157,7 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
             } else {
               // Send message for self top-up
               if (pubkey) {
-                const message = `⚡️ You just topped up your position with ${amount} sats in ${queueId}! 🎉`;
+                const message = `⚡️ You just topped up your position with ${amount} sats in ${queueName}!`;
                 try {
                   await sendNostrPrivateMessage(pubkey, message);
                   console.log('Nostr message sent successfully');
@@ -169,7 +173,7 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
       }, 1000);
     }
     return () => clearInterval(intervalId);
-  }, [invoice, isPaid, queueId, userId, amount, onPaymentSuccess, pubkey, queueItem]);
+  }, [invoice, isPaid, queueId, userId, amount, onPaymentSuccess, pubkey, queueItem, queueName]);
 
   const handleAmountChange = (e) => {
     const newAmount = Number(e.target.value);
@@ -370,7 +374,9 @@ export default function Queue() {
         setUserPubkey(pubkey);
 
         if (pubkey) {
-          const message = `🎉 You are in the waiting list for ${queueId}! 🚀`;
+          const queueData = await getQueueData(queueId);
+          const queueName = queueData?.name || queueId;
+          const message = `🎉 You are in the waiting list for ${queueName}!`;
           await sendNostrPrivateMessage(pubkey, message);
         }
       } catch (error) {

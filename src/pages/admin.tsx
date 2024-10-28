@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useQueue } from '@/context/QueueContext';
 import { Button } from '@/components/ui/button';
 import { useParams } from 'react-router-dom';
 import { getQueueData, removeUserFromQueue, listenToQueueUpdates } from '@/lib/firebase';
@@ -26,7 +25,6 @@ export default function Admin() {
   const { uuid } = useParams<{ uuid: string }>();
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [qrValue, setQrValue] = useState('')
-  const { getQueueName } = useQueue()
   const [queueName, setQueueName] = useState<string | null>(null)
   const [removedItems, setRemovedItems] = useState<RemovedItem[]>([])
   const [showQRModal, setShowQRModal] = useState(false)
@@ -34,14 +32,13 @@ export default function Admin() {
   useEffect(() => {
     const fetchQueueData = async () => {
       if (uuid) {
-        const name = getQueueName(uuid)
-        setQueueName(name)
-        setQrValue(`${window.location.origin}/${name?.toLowerCase() || uuid}`); // Ensure lowercase in QR code
-        
         const queueData = await getQueueData(uuid);
         if (queueData) {
           updateQueueState(queueData);
+          setQueueName(queueData.name || uuid);
         }
+
+        setQrValue(`${window.location.origin}/${queueData?.name?.toLowerCase() || uuid}`);
 
         // Set up real-time listener
         const unsubscribe = listenToQueueUpdates(uuid, updateQueueState);
@@ -50,7 +47,7 @@ export default function Admin() {
     };
 
     fetchQueueData();
-  }, [uuid, getQueueName])
+  }, [uuid])
 
   const updateQueueState = (queueData: any) => {
     setQueue(Object.values(queueData.currentQueue || {}));
@@ -71,11 +68,10 @@ export default function Admin() {
     if (sortedQueue.length > 0 && uuid) {
       const removedItem = sortedQueue[0];
       await removeUserFromQueue(uuid, removedItem.id);
-      // The queue will be updated automatically through the real-time listener
 
       // Send Nostr message to the called user
-      if (removedItem.nostrPubkey) {
-        const message = `🔔 You've been called for ${queueName || uuid}! 🎉`;
+      if (removedItem.nostrPubkey && queueName) {
+        const message = `🔔 You've been called for ${queueName}!`;
         try {
           await sendNostrPrivateMessage(removedItem.nostrPubkey, message);
           console.log('Nostr message sent successfully');
@@ -87,17 +83,29 @@ export default function Admin() {
   };
 
   const handleCallUser = async (user: QueueItem) => {
-    if (uuid) {
+    if (!uuid) {
+      console.warn('Missing queue ID');
+      return;
+    }
+
+    try {
       await removeUserFromQueue(uuid, user.id);
-      if (user.nostrPubkey) {
-        const message = `🔔 You've been called for ${queueName || uuid}! 🎉`;
+
+      if (user.nostrPubkey && queueName) {
+        const message = `🔔 You've been called for ${queueName}!`;
         try {
           await sendNostrPrivateMessage(user.nostrPubkey, message);
-          console.log('Nostr message sent successfully');
         } catch (error) {
           console.error('Error sending Nostr message:', error);
         }
+      } else {
+        console.log('Skipping Nostr message - missing pubkey or queue name:', { 
+          hasPubkey: !!user.nostrPubkey,
+          hasQueueName: !!queueName 
+        });
       }
+    } catch (error) {
+      console.error('Error removing user from queue:', error);
     }
   };
 
@@ -166,8 +174,8 @@ export default function Admin() {
                             </Button>
                           </div>
                         </div>
-                        {item.comment && (
-                          <div className="text-sm text-gray-500 mt-1 text-center">
+                            {item.comment && (
+                              <div className="text-sm text-gray-500 mt-1 text-center">
                             {item.comment}
                           </div>
                         )}
