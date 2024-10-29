@@ -1,10 +1,10 @@
+![Header](images/header.png)
+
 # SatsQueue
 
 SatsQueue lets users pay to increase their chances of being served sooner in any type of queue - from restaurants to podcast live comments. Users get notified through Nostr when it's their turn.
 
 [Visit Live App](https://satsqueue.web.app)
-
-![Main Screen](images/main.png)
 
 ## Problem
 
@@ -12,10 +12,12 @@ Long wait times in any type of queue can be frustrating, whether it's for servic
 
 ## Solution
 
-SatsQueue introduces a decentralized queue system where users can enter any type of queue and boost their chances of being served sooner by depositing sats via the Lightning Network. The more sats a user deposits, the higher their probability of being selected next. This creates an engaging, fair, and flexible queue experience for both users and queue managers.
+SatsQueue introduces a decentralized queue system where users can enter any type of queue and boost their chances of being served sooner by depositing sats via the Lightning Network. The more sats a user deposits, the higher their probability of being selected next. This creates an engaging, fair, and flexible queue experience for both users and queue managers. The system is particularly useful for podcasts and live streaming, where viewers can support their favorite questions or comments from other participants by boosting them with sats, helping amplify voices they want to hear.
 
 ### Key Features
 
+- **Main Screen**: Users can create a new queue.
+  ![Main Screen](images/main.png)
 - **Queue Joining**: Users can join any virtual queue.
   ![Queue Interface](images/queue.png)
 - **Probability Boost**: Users can deposit sats to increase their chance of being selected next, supporting both LNURL and Lightning Address payments.
@@ -23,7 +25,8 @@ SatsQueue introduces a decentralized queue system where users can enter any type
   ![Deposit Screen](images/deposit.png)
 - **Nostr Integration**: Link your Nostr identity (npub, nprofile, or NIP-05) to receive DM notifications for queue updates and payments.
 
-  <img src="images/notification.png" width="300" alt="Nostr Notification">
+  <img src="images/notification.png" width="200" alt="Nostr Notification">
+
 - **Admin Dashboard**: Queue managers can manage their queues through a dedicated admin interface.
   ![Admin Dashboard](images/admin.png)
 
@@ -35,6 +38,7 @@ To run this project locally:
 2. Install dependencies with `npm install`
 3. Set up your environment variables in a `.env` file
 4. Run the development server with `npm run dev`
+5. Open the app in your browser at `http://localhost:5173`
 
 ## Technologies Used
 
@@ -44,11 +48,3 @@ To run this project locally:
 - Firebase
 - Lightning Network
 - Nostr
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License.

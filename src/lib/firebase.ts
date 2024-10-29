@@ -38,7 +38,7 @@ export const createQueue = async (queueName: string, lnurl: string) => {
   const mockedUsers = generateMockedUsers(10);
   await set(newQueueRef, {
     id: queueId,
-    name: queueName, // Keep original name for display
+    name: queueName,
     lnurl: lnurl,
     createdAt: Date.now(),
     isActive: true,
@@ -132,6 +132,7 @@ export const getQueueData = async (queueName: string) => {
   const normalizedQueueName = queueName.toLowerCase();
   const queueRef = ref(db, `queues/${normalizedQueueName}`);
   const snapshot = await get(queueRef);
+  console.log('Snapshot:', snapshot.val());
   return snapshot.val();
 };
 
