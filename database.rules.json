@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "queues": {
+      "$queueId": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+} 
