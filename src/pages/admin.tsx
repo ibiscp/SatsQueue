@@ -111,7 +111,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center py-4 sm:py-8 px-2 sm:px-4">
+    <div className=" flex flex-col items-center px-2 sm:px-4">
       <div className="w-full max-w-6xl p-2 sm:p-6 flex-grow">
         <div className="flex justify-center items-center mb-4 sm:mb-8 relative">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
