@@ -119,7 +119,7 @@ export default function Admin() {
               href={qrValue}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-base sm:text-xl font-medium text-gray-800 hover:bg-gray-200 transition-colors duration-200 bg-gray-100 rounded-lg px-3 sm:px-6 py-2 sm:py-3 truncate max-w-[280px] sm:max-w-none text-center"
+              className="text-base sm:text-xl font-medium text-gray-800 bg-gray-100 rounded-lg px-3 sm:px-6 py-2 sm:py-3 truncate max-w-[280px] sm:max-w-none text-center"
             >
               {qrValue}
             </a>
@@ -142,14 +142,14 @@ export default function Admin() {
         )}
 
         <div className="flex flex-col md:flex-row gap-4 sm:gap-8 h-auto sm:h-[calc(100vh-16rem)]">
-          <Card className="w-full md:w-1/2 shadow-lg flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl lg:hover:scale-105 lg:active:scale-100 active:shadow-md">
+          <Card className="w-full md:w-1/2 shadow-lg flex flex-col ease-in-out hover:shadow-xl lg:active:scale-100 active:shadow-md">
             <CardHeader className="text-center p-3 sm:p-6">
               <CardTitle className="text-xl sm:text-2xl">Current Queue</CardTitle>
             </CardHeader>
             <CardContent className="flex-grow overflow-hidden flex flex-col p-2 sm:p-4">
               <div className="p-2 sm:p-4">
                 <Button
-                  className="w-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200 ease-in-out focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none text-sm sm:text-base py-2 sm:py-3"
+                  className="w-full bg-red-500 hover:bg-red-600 text-white ease-in-out focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:outline-none text-sm sm:text-base py-2 sm:py-3"
                   onClick={handleCallNext}
                 >
                   Call next
@@ -188,7 +188,7 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          <Card className="w-full md:w-1/2 shadow-lg flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl lg:hover:scale-105 lg:active:scale-100 active:shadow-md">
+          <Card className="w-full md:w-1/2 shadow-lg flex flex-col ease-in-out active:shadow-md">
             <CardHeader className="text-center p-3 sm:p-6">
               <CardTitle className="text-xl sm:text-2xl">Recently Called</CardTitle>
             </CardHeader>
