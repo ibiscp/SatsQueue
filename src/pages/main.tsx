@@ -5,11 +5,13 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { useQueue } from '../context/QueueContext'
-import { app, analytics, createQueue, checkQueueExists } from '../lib/firebase'
+import { app, analytics, checkQueueExists } from '../lib/firebase'
 import { isValidLNURL } from '../lib/lightning';
 import { Check, X, Loader2 } from 'lucide-react';
 
 import Footer from '../components/ui/Footer'
+
+import { createQueueFunction } from '../lib/cloudFunctions'
 
 
 export default function Home() {
@@ -104,13 +106,15 @@ export default function Home() {
     e.preventDefault()
     if (queueName.trim() && isValidUrl && isValidQueueName && isQueueNameAvailable) {
       try {
-        const normalizedQueueName = queueName.toLowerCase(); // Convert to lowercase
-        const queueId = await createQueue(queueName, walletAddress);
+        const result = await createQueueFunction({ 
+          queueName, 
+          lnurl: walletAddress 
+        });
+        const { queueId } = result.data;
         setQueueNameContext(queueName, queueId);
-        navigate(`/queue/${normalizedQueueName}`);
+        navigate(`/queue/${queueName.toLowerCase()}`);
       } catch (error) {
         console.error("Error creating queue:", error);
-        // TODO: Show error message to user
       }
     }
   }
