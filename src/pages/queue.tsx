@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { getQueueData, addUserToQueue, listenToQueueUpdates, updateUserSats } from '@/lib/firebase';
 import { QRCodeSVG } from 'qrcode.react';
 import { getNostrName, sendNostrPrivateMessage } from '../lib/nostr';
-import Footer from '@/components/ui/footer';
+import Footer from '@/components/ui/Footer';
 import { generateInvoice } from '@/lib/lightning';
 import confetti from 'canvas-confetti';
 
@@ -107,22 +107,22 @@ const LightningQRCode = ({ lnurl, queueId, userId, onPaymentSuccess, pubkey }) =
             clearInterval(intervalId);
 
             // Trigger firework confetti animation
-            var duration = 5 * 1000;
-            var animationEnd = Date.now() + duration;
-            var defaults = { startVelocity: 10, spread: 500, ticks: 60, zIndex: 5 };
+            const duration = 5 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 10, spread: 500, ticks: 60, zIndex: 5 };
 
-            function randomInRange(min, max) {
+            const randomInRange = (min: number, max: number) => {
               return Math.random() * (max - min) + min;
             }
 
-            var interval = setInterval(function() {
-              var timeLeft = animationEnd - Date.now();
+            const interval = setInterval(() => {
+              const timeLeft = animationEnd - Date.now();
 
               if (timeLeft <= 0) {
                 return clearInterval(interval);
               }
 
-              var particleCount = 200 * (timeLeft / duration);
+              const particleCount = 200 * (timeLeft / duration);
               // since particles fall down, start a bit higher than random
               // confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
               confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.9), y: Math.random() - 0.2 } });
@@ -417,9 +417,9 @@ export default function Queue() {
   };
   return (
     <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center">      
-      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-8 flex-grow p-6">
-        <div className="w-full md:w-1/2 flex flex-col h-[calc(100vh-12rem)]">
-          <Card className="shadow-lg flex-grow">
+      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-4 md:gap-8 flex-grow p-3 md:p-6">
+        <div className="w-full md:w-1/2 flex flex-col h-auto md:h-[calc(100vh-12rem)]">
+          <Card className="shadow-lg flex-grow mb-4 md:mb-0">
             {!userJoined ? (
               <>
                 <CardHeader>
@@ -500,20 +500,20 @@ export default function Queue() {
           </Card>
         </div>
 
-        <div className="w-full md:w-1/2 flex flex-col h-[calc(100vh-12rem)]">
+        <div className="w-full md:w-1/2 flex flex-col h-auto md:h-[calc(100vh-12rem)]">
           <Card className="shadow-lg flex-grow overflow-hidden flex flex-col">
             <CardHeader className="flex-shrink-0">
-              <CardTitle className="text-2xl">Queue Status</CardTitle>
+              <CardTitle className="text-xl md:text-2xl">Queue Status</CardTitle>
               {removedItems.length > 0 && (
                 <div className="p-2 bg-gray-100 rounded">
-                  <div className="text-3xl font-bold mb-2 text-center">{removedItems[0].name}</div>
-                  <div className="text-sm text-gray-500 text-center">
+                  <div className="text-2xl md:text-3xl font-bold mb-2 text-center break-words">{removedItems[0].name}</div>
+                  <div className="text-xs md:text-sm text-gray-500 text-center">
                     <span>{removedItems[0].sats} sats</span>
                     <span className="mx-2">•</span>
                     <span>Waited: {Math.floor((removedItems[0].servedAt - removedItems[0].createdAt) / 60000)} minutes</span>
                   </div>
                   {removedItems[0].comment && (
-                    <div className="text-sm text-gray-500 mt-2 text-center italic">
+                    <div className="text-xs md:text-sm text-gray-500 mt-2 text-center italic break-words">
                       {removedItems[0].comment}
                     </div>
                   )}
@@ -528,10 +528,10 @@ export default function Queue() {
                   <ul className="space-y-2">
                     {sortedQueue.map((item, index) => (
                       <li key={index} className="border-b py-2">
-                        <div className="grid grid-cols-4 gap-2 items-center">
-                          <span className="font-medium truncate">{item.name}</span>
-                          <span className="text-sm text-gray-500 text-center">{new Date(item.createdAt).toLocaleTimeString()}</span>
-                          <span className="text-sm text-gray-500 text-right">{item.sats} sats</span>
+                        <div className="grid grid-cols-4 gap-1 md:gap-2 items-center">
+                          <span className="font-medium truncate text-sm md:text-base">{item.name}</span>
+                          <span className="text-xs md:text-sm text-gray-500 text-center">{new Date(item.createdAt).toLocaleTimeString()}</span>
+                          <span className="text-xs md:text-sm text-gray-500 text-right">{item.sats} sats</span>
                           <Button
                             onClick={() => {
                               setSelectedUserId(item.id);
@@ -544,7 +544,7 @@ export default function Queue() {
                           </Button>
                         </div>
                         {item.comment && (
-                          <div className="text-sm text-gray-500 mt-1 text-center">
+                          <div className="text-xs md:text-sm text-gray-500 mt-1 text-center break-words">
                             {item.comment}
                           </div>
                         )}
@@ -557,7 +557,9 @@ export default function Queue() {
           </Card>
         </div>
       </div>
-      <Footer />
+      <div className="hidden md:block">
+        <Footer />
+      </div>
     </div>
   )
 }
