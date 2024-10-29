@@ -8,8 +8,7 @@ import { useQueue } from '../context/QueueContext'
 import { app, analytics, checkQueueExists } from '../lib/firebase'
 import { isValidLNURL } from '../lib/lightning';
 import { Check, X, Loader2 } from 'lucide-react';
-
-import Footer from '../components/ui/Footer'
+import Footer from '../components/ui/footer'
 
 import { createQueueFunction } from '../lib/cloudFunctions'
 

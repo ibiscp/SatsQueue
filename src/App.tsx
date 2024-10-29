@@ -13,7 +13,6 @@ function App() {
           <div className="flex items-center justify-center pt-6">
             <Title />
           </div>
-          <div className="flex-grow">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/:name" element={
@@ -23,7 +22,6 @@ function App() {
                 <Admin />
               } />
             </Routes>
-          </div>
         </div>
       </QueueProvider>
     </Router>

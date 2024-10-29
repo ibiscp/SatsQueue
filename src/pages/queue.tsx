@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { getQueueData, listenToQueueUpdates, updateUserSats } from '@/lib/firebase';
 import { QRCodeSVG } from 'qrcode.react';
 import { getNostrName, sendNostrPrivateMessage } from '../lib/nostr';
-import Footer from '@/components/ui/Footer';
+import Footer from '@/components/ui/footer';
 import { generateInvoice } from '@/lib/lightning';
 import confetti from 'canvas-confetti';
 import { addUserToQueueFunction } from '@/lib/cloudFunctions';

@@ -20,7 +20,7 @@ SatsQueue introduces a decentralized queue system where users can enter any type
   ![Main Screen](images/main.png)
 - **Queue Joining**: Users can join any virtual queue.
   ![User Join](images/user-join.png)
-- **Probability Boost**: Users can deposit sats to increase their chance of being selected next, supporting both LNURL and Lightning Address payments.
+- **Probability Boost**: Users can deposit sats to increase their chance of being selected next.
   ![User Boost](images/user-boost.png)
 - **Community Support**: Users can boost other participants' chances by topping up their sats - perfect for amplifying questions or comments you support in podcast queues.
   ![Community Boost](images/community-boost.png)
