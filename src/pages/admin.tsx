@@ -237,7 +237,9 @@ export default function Admin() {
           </Card>
         </div>
       </div>
-      <Footer />
+      <div className="hidden md:block">
+        <Footer />
+      </div>
     </div>
   )
 }
