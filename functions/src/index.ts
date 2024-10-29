@@ -41,6 +41,38 @@ export const createQueue = functions.https.onCall(async (data) => {
   return { queueId };
 });
 
+// Add User to Queue Function
+export const addUserToQueue = functions.https.onCall(async (data) => {
+  // @ts-expect-error avoid error
+  const { queueName, userName, nostrPubkey, sats, comment } = data;
+  
+  if (!queueName || !userName) {
+    throw new functions.https.HttpsError('invalid-argument', 'Missing required fields');
+  }
+
+  const normalizedQueueName = queueName.toLowerCase();
+  const userId = generateId();
+  const userRef = db.ref(`queues/${normalizedQueueName}/currentQueue/${userId}`);
+  const totalSatsRef = db.ref(`queues/${normalizedQueueName}/totalSats`);
+
+  const userData = {
+    id: userId,
+    name: userName,
+    createdAt: Date.now(),
+    nostrPubkey: nostrPubkey || null,
+    sats: sats || 0,
+    comment: comment || ''
+  };
+
+  await userRef.set(userData);
+  
+  // Update total sats
+  const snapshot = await totalSatsRef.once('value');
+  const currentTotal = snapshot.val() || 0;
+  await totalSatsRef.set(currentTotal + (sats || 0));
+
+  return { userId };
+});
 // Helper function to generate unique IDs
 function generateId() {
   return Math.random().toString(36).substr(2, 9);
