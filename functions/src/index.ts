@@ -73,6 +73,36 @@ export const addUserToQueue = functions.https.onCall(async (data) => {
 
   return { userId };
 });
+
+// Remove User from Queue Function
+export const removeUserFromQueue = functions.https.onCall(async (data) => {
+  // @ts-expect-error avoid error
+  const { queueName, userId } = data;
+  
+  if (!queueName || !userId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Missing required fields');
+  }
+
+  const normalizedQueueName = queueName.toLowerCase();
+  const userRef = db.ref(`queues/${normalizedQueueName}/currentQueue/${userId}`);
+  const servedRef = db.ref(`queues/${normalizedQueueName}/servedCustomers/${userId}`);
+
+  const snapshot = await userRef.once('value');
+  const userData = snapshot.val();
+
+  if (!userData) {
+    throw new functions.https.HttpsError('not-found', 'User not found in queue');
+  }
+
+  await userRef.remove();
+  await servedRef.set({
+    ...userData,
+    servedAt: Date.now()
+  });
+
+  return { success: true };
+});
+
 // Helper function to generate unique IDs
 function generateId() {
   return Math.random().toString(36).substr(2, 9);
