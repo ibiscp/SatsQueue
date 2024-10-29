@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { useParams } from 'react-router-dom';
 import { getQueueData, removeUserFromQueue, listenToQueueUpdates } from '@/lib/firebase';
 import { sendNostrPrivateMessage } from '@/lib/nostr';
-import Footer from '@/components/ui/footer';
 import { QrCode, Minus } from 'lucide-react';
+import Footer from '@/components/ui/footer';
 
 type QueueItem = {
   name: string;
