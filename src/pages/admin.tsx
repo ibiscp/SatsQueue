@@ -4,10 +4,11 @@ import { QRCodeSVG } from 'qrcode.react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { useParams } from 'react-router-dom';
-import { getQueueData, removeUserFromQueue, listenToQueueUpdates } from '@/lib/firebase';
+import { getQueueData, listenToQueueUpdates } from '@/lib/firebase';
 import { sendNostrPrivateMessage } from '@/lib/nostr';
-import Footer from '@/components/ui/footer';
 import { QrCode, Minus } from 'lucide-react';
+import { removeUserFromQueueFunction } from '@/lib/cloudFunctions';
+import Footer from '@/components/ui/Footer';
 
 type QueueItem = {
   name: string;
@@ -68,7 +69,10 @@ export default function Admin() {
   const handleCallNext = async () => {
     if (sortedQueue.length > 0 && uuid) {
       const removedItem = sortedQueue[0];
-      await removeUserFromQueue(uuid, removedItem.id);
+      await removeUserFromQueueFunction({
+        queueName: uuid,
+        userId: removedItem.id
+      });
 
       // Send Nostr message to the called user
       if (removedItem.nostrPubkey && queueName) {
@@ -90,7 +94,10 @@ export default function Admin() {
     }
 
     try {
-      await removeUserFromQueue(uuid, user.id);
+      await removeUserFromQueueFunction({
+        queueName: uuid,
+        userId: user.id
+      });
 
       if (user.nostrPubkey && queueName) {
         const message = `🔔 You've been called for ${queueName}!`;
