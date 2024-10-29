@@ -19,10 +19,11 @@ SatsQueue introduces a decentralized queue system where users can enter any type
 - **Main Screen**: Users can create a new queue.
   ![Main Screen](images/main.png)
 - **Queue Joining**: Users can join any virtual queue.
-  ![Queue Interface](images/queue.png)
+  ![User Join](images/user-join.png)
 - **Probability Boost**: Users can deposit sats to increase their chance of being selected next, supporting both LNURL and Lightning Address payments.
+  ![User Boost](images/user-boost.png)
 - **Community Support**: Users can boost other participants' chances by topping up their sats - perfect for amplifying questions or comments you support in podcast queues.
-  ![Deposit Screen](images/deposit.png)
+  ![Community Boost](images/community-boost.png)
 - **Nostr Integration**: Link your Nostr identity (npub, nprofile, or NIP-05) to receive DM notifications for queue updates and payments.
 
   <img src="images/notification.png" width="200" alt="Nostr Notification">
