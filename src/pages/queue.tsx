@@ -6,12 +6,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
-import { getQueueData, addUserToQueue, listenToQueueUpdates, updateUserSats } from '@/lib/firebase';
+import { getQueueData, listenToQueueUpdates, updateUserSats } from '@/lib/firebase';
 import { QRCodeSVG } from 'qrcode.react';
 import { getNostrName, sendNostrPrivateMessage } from '../lib/nostr';
 import Footer from '@/components/ui/Footer';
 import { generateInvoice } from '@/lib/lightning';
 import confetti from 'canvas-confetti';
+import { addUserToQueueFunction } from '@/lib/cloudFunctions';
 
 // Update the QueueItem type to match the structure from Firebase
 type QueueItem = {
@@ -367,7 +368,14 @@ export default function Queue() {
           pubkey = nostrData.pubkey;
         }
 
-        const newUserId = await addUserToQueue(queueId, name, pubkey, 0, comment);
+        const result = await addUserToQueueFunction({
+          queueName: queueId,
+          userName: name,
+          nostrPubkey: pubkey,
+          sats: 0,
+          comment
+        });
+        const { userId: newUserId } = result.data;
         setUserId(newUserId);
         setUserJoined(true);
         setUserName(name);
