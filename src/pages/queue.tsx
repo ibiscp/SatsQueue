@@ -462,6 +462,20 @@ export default function Queue() {
                       Enter Queue
                     </Button>
                   </form>
+                  {selectedUserId && (
+                    <div className="mt-6 border-t pt-6">
+                      <h3 className="text-xl font-semibold mb-4">
+                        Add Sats to {sortedQueue.find(item => item.id === selectedUserId)?.name}'s Position
+                      </h3>
+                      <LightningQRCode 
+                        lnurl={lnurl} 
+                        queueId={queueId}
+                        userId={selectedUserId}
+                        onPaymentSuccess={handlePaymentSuccess}
+                        pubkey={userPubkey}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </>
             ) : (
